@@ -1,23 +1,56 @@
 (function() {
-  var BackgroundScaleViews, CurrentInstrument, CurrentScale, CurrentScaleRoot, FingerPositions, FingerboardNoteStyle, FingerboardPaper, FingerboardStyle, FlatNoteNames, Instruments, KeyboardPaper, KeyboardStyle, KeyboardViews, ScalePaper, ScaleRootColor, ScaleStyle, ScaleViews, Scales, SharpNoteNames, StringCount, create_fingerboard_notes, create_keyboard, create_scales, draw_fingerboard, fingerboard_notes, pitch_at, pitch_name, set_scale_notes, update_background_scale, update_keyboard, update_scales,
+  var BackgroundScaleViews, CurrentInstrument, CurrentScale, CurrentScaleRoot, FingerPositions, FingerboardNoteStyle, FingerboardPaper, FingerboardStyle, FlatNoteNames, Instruments, KeyboardPaper, KeyboardStyle, KeyboardViews, ScaleNames, ScalePaper, ScaleRootColor, ScaleStyle, ScaleViews, Scales, SharpNoteNames, StringCount, create_fingerboard_notes, create_keyboard, create_scales, draw_fingerboard, fingerboard_notes, pitch_at, pitch_name, scale, set_scale_notes, update_background_scale, update_keyboard, update_scales,
     __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   SharpNoteNames = 'C C# D D# E F F# G G# A A# B'.split(/\s/);
 
   FlatNoteNames = 'C Db D Eb E F Gb G Ab A Bb B'.split(/\s/);
 
-  Scales = {
-    'Diatonic Major': [0, 2, 4, 5, 7, 9, 11],
-    'Natural Minor': [0, 2, 3, 5, 7, 8, 10],
-    'Major Pentatonic': [0, 2, 4, 7, 9],
-    'Minor Pentatonic': [0, 3, 5, 7, 10],
-    'Melodic Minor': [0, 2, 3, 5, 7, 9, 11],
-    'Harmonic Minor': [0, 2, 3, 5, 7, 8, 11],
-    'Blues': [0, 3, 5, 6, 7, 10],
-    'Freygish': [0, 1, 4, 5, 7, 8, 10],
-    'Whole Tone': [0, 2, 4, 6, 8, 10],
-    'Octatonic': [0, 2, 3, 5, 6, 8, 9, 11]
-  };
+  Scales = [
+    {
+      'Diatonic Major': [0, 2, 4, 5, 7, 9, 11]
+    }, {
+      'Natural Minor': [0, 2, 3, 5, 7, 8, 10]
+    }, {
+      'Major Pentatonic': [0, 2, 4, 7, 9]
+    }, {
+      'Minor Pentatonic': [0, 3, 5, 7, 10]
+    }, {
+      'Melodic Minor': [0, 2, 3, 5, 7, 9, 11]
+    }, {
+      'Harmonic Minor': [0, 2, 3, 5, 7, 8, 11]
+    }, {
+      'Blues': [0, 3, 5, 6, 7, 10]
+    }, {
+      'Freygish': [0, 1, 4, 5, 7, 8, 10]
+    }, {
+      'Whole Tone': [0, 2, 4, 6, 8, 10]
+    }, {
+      'Octatonic': [0, 2, 3, 5, 6, 8, 9, 11]
+    }
+  ];
+
+  ScaleNames = (function() {
+    var _i, _len, _results;
+    _results = [];
+    for (_i = 0, _len = Scales.length; _i < _len; _i++) {
+      scale = Scales[_i];
+      _results.push(_.keys(scale)[0]);
+    }
+    return _results;
+  })();
+
+  (function() {
+    var name, pitches, _i, _len, _results;
+    _results = [];
+    for (_i = 0, _len = Scales.length; _i < _len; _i++) {
+      scale = Scales[_i];
+      name = _.keys(scale)[0];
+      pitches = scale[name];
+      _results.push(Scales[name] = pitches);
+    }
+    return _results;
+  })();
 
   Instruments = {
     Violin: [7, 14, 21, 28],
@@ -54,7 +87,7 @@
       }
     },
     scale: {
-      fill: 'lightBlue'
+      fill: 'lightGreen'
     },
     root: {
       fill: ScaleRootColor,
@@ -83,7 +116,7 @@
     },
     Key: {
       width: 25,
-      margin: 2
+      margin: 3
     },
     WhiteKey: {
       height: 120,
@@ -109,7 +142,7 @@
   ScaleStyle = {
     cols: 4,
     cell: {
-      width: 80,
+      width: 85,
       height: 90,
       padding: 0
     },
@@ -222,7 +255,7 @@
     style = ScaleStyle;
     paper = ScalePaper;
     cols = style.cols;
-    return _.keys(Scales).sort().forEach(function(name, i) {
+    return ScaleNames.forEach(function(name, i) {
       var a, bg, cell_height, cell_width, hover, note_circle, nx, ny, pitch, pitches, r, x, y, _i;
       pitches = Scales[name];
       cell_width = style.cell.width;
@@ -281,14 +314,11 @@
   };
 
   update_scales = function() {
-    var name, _results;
-    _results = [];
-    for (name in Scales) {
-      _results.push(ScaleViews[name].animate({
+    return ScaleNames.forEach(function(name, i) {
+      return ScaleViews[name].animate({
         fill: (name === CurrentScale ? 'lightBlue' : 'white')
-      }));
-    }
-    return _results;
+      });
+    });
   };
 
   draw_fingerboard = function() {
@@ -333,7 +363,7 @@
   KeyboardViews = {};
 
   set_scale_notes = function(notes, scale_root) {
-    var attrs, circle, label, n, note_type, pitch, pitch_name_options, scale, scale_pitches, scale_root_name, _i, _len, _ref, _results;
+    var attrs, circle, label, n, note_type, pitch, pitch_name_options, scale_pitches, scale_root_name, _i, _len, _ref, _results;
     if (scale_root == null) {
       scale_root = 0;
     }
@@ -366,7 +396,7 @@
         0: 'root',
         '-1': 'chromatic'
       }[scale_pitches.indexOf(pitch)] || 'scale';
-      if (note_type === 'scale' && pitch === 7) {
+      if (__indexOf.call(scale_pitches, pitch) >= 0 && (pitch - scale_pitches[0] + 12) % 12 === 7) {
         note_type = 'fifth';
       }
       pitch_name_options = {
@@ -436,9 +466,13 @@
     scale_pitches = Scales[CurrentScale];
     for (_i = 0, _len = BackgroundScaleViews.length; _i < _len; _i++) {
       _ref = BackgroundScaleViews[_i], pitch = _ref.pitch, circle = _ref.circle;
+      pitch = (pitch + 12 + Instruments[CurrentInstrument][0]) % 12;
       fill = 'white';
       if (__indexOf.call(scale_pitches, pitch) >= 0) {
         fill = 'green';
+      }
+      if (__indexOf.call(scale_pitches, pitch) >= 0 && pitch === 7) {
+        fill = 'blue';
       }
       if (scale_pitches.indexOf(pitch) === 0) {
         fill = 'red';
@@ -472,7 +506,8 @@
 
   $('h2#instruments span').click(function() {
     var fret_number, note, string_number, string_pitches, _i, _len;
-    string_pitches = Instruments[$(this).text()];
+    CurrentInstrument = $(this).text();
+    string_pitches = Instruments[CurrentInstrument];
     for (_i = 0, _len = fingerboard_notes.length; _i < _len; _i++) {
       note = fingerboard_notes[_i];
       string_number = note.string_number, fret_number = note.fret_number;
@@ -480,7 +515,8 @@
     }
     set_scale_notes(fingerboard_notes, CurrentScaleRoot);
     $('h2#instruments span').removeClass('selected');
-    return $(this).addClass('selected');
+    $(this).addClass('selected');
+    return set_scale_notes(fingerboard_notes, CurrentScaleRoot);
   });
 
 }).call(this);
