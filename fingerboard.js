@@ -486,6 +486,7 @@
     pos.top += 4;
     style = FingerboardStyle;
     pos.left -= style.string_width * ((scale_pitches_0[0] * 5) % 12);
+    $('#scale-notes').addClass('animate');
     return $('#scale-notes').css({
       left: pos.left,
       top: pos.top
