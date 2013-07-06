@@ -111,17 +111,26 @@ create_keyboard = ->
     note_name = pitch_name(pitch, flat: true)
 
     paper.setStart()
-    key = paper.rect(x, 0, width, height, 2).attr style.key
+    key = paper.rect(x, 0, width, height, 2).attr(style.key)#.glow()
     label = paper.text(x + width / 2, height - 10, note_name).attr style.label
-    note = paper.setFinish()
+    hover = paper.rect(x, 0, width, height).attr fill: (if is_black_key then 'white' else 'black'), 'fill-opacity': 0
+    note_view = paper.setFinish()
       .attr(cursor: 'pointer')
-      .mouseover(-> key.animate fill: 'gray', 100)
-      .mouseout(-> key.animate style.key, 100)
+      .mouseover(-> hover.animate 'fill-opacity': 0.4, 100)
+      .mouseout(-> hover.animate 'fill-opacity': 0, 100)
       .click ->
         CurrentScaleRoot = pitch
         set_scale_notes fingerboard_notes, pitch
-     black_keys.push note if is_black_key
+    black_keys.push note_view if is_black_key
+    KeyboardViews[pitch] = {key, style}
   black_keys.toFront()
+
+update_keyboard = (root_pitch) ->
+  for pitch in [0...12]
+    note_view = KeyboardViews[pitch]
+    note_view.key.animate fill: (if pitch == root_pitch then 'red' else note_view.style.key.fill), 100
+
+ScaleViews = {}
 
 create_scales = ->
   style = ScaleStyle
@@ -133,13 +142,11 @@ create_scales = ->
     cell_height = style.cell.height
     x = cell_width / 2 + (i % cols) * cell_width
     y = 6 + Math.floor(i / cols) * cell_height
-    p = paper.rect(x - cell_width / 2, y - 5, cell_width - 5, cell_width, 2)
-      .attr(stroke: 'gray')
-      .mouseover(-> @animate fill: 'gray')
-      .mouseout(-> @animate fill: 'white')
-      .click ->
-        CurrentScale = name
-        set_scale_notes fingerboard_notes, CurrentScaleRoot
+    paper.setStart()
+    bg = paper.rect(x - cell_width / 2, y - 5, cell_width - 5, cell_width, 2)
+      .attr stroke: 'gray'
+    hover = paper.rect(x - cell_width / 2, y - 5, cell_width - 5, cell_width, 2)
+      .attr fill: 'gray', 'fill-opacity': 0
     paper.text x, y, name
     y += 40
     for pitch in [0...12]
@@ -153,6 +160,21 @@ create_scales = ->
         note_circle.attr fill: 'gray'
         note_circle.toFront()
       note_circle.attr fill: 'red' if pitch == 0
+    bg.toBack()
+    hover.toFront()
+    paper.setFinish()
+      .attr(cursor: 'pointer')
+      .mouseover(-> hover.animate 'fill-opacity': 0.4)
+      .mouseout(-> hover.animate 'fill-opacity': 0)
+      .click ->
+        CurrentScale = name
+        set_scale_notes fingerboard_notes, CurrentScaleRoot
+        update_scales()
+    ScaleViews[name] = bg
+
+update_scales = ->
+  for name of Scales
+    ScaleViews[name].animate fill: (if name == CurrentScale then 'lightBlue' else 'white')
 
 draw_fingerboard = ->
   paper = FingerboardPaper
@@ -181,12 +203,15 @@ create_fingerboard_notes = ->
         label: paper.text x, y, pitch_name(pitch)
   notes
 
+KeyboardViews = {}
+
 set_scale_notes = (notes, scale_root=0) ->
   scale_root_name = scale_root
   if typeof(scale_root) == 'string'
     scale_root = FlatNoteNames.indexOf(scale_root_name)
     scale_root = SharpNoteNames.indexOf(scale_root_name) unless scale_root >= 0
   scale_root_name = FlatNoteNames[scale_root] unless typeof(scale_root_name) == 'string'
+  update_keyboard scale_root
   scale = Scales[CurrentScale]
   scale_pitches = ((n + scale_root) % 12 for n in scale)
   for {pitch, circle, label} in notes
@@ -204,3 +229,4 @@ create_scales()
 draw_fingerboard()
 fingerboard_notes = create_fingerboard_notes()
 set_scale_notes fingerboard_notes, CurrentScaleRoot
+update_scales()
