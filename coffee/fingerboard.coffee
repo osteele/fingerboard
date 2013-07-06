@@ -284,6 +284,7 @@ update_background_scale = (scale_pitches_0) ->
   pos.top += 4
   style = FingerboardStyle
   pos.left -= style.string_width * ((scale_pitches_0[0] * 5) % 12)
+  $('#scale-notes').addClass('animate')
   $('#scale-notes').css(left: pos.left, top: pos.top)
 
 create_keyboard()
