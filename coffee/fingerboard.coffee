@@ -13,6 +13,12 @@ Scales =
   'Whole Tone': [0,2,4,6,8,10]
   'Octatonic': [0,2,3,5,6,8,9,11]
 
+Instruments =
+  Violin: [7,14,21,28]
+  Viola: [0,7,14,21]
+  Cello: [0,7,14,21]
+
+CurrentInstrument = 'Cello'
 CurrentScaleRoot = 'C'
 CurrentScale = 'Diatonic Major'
 
@@ -198,6 +204,8 @@ create_fingerboard_notes = ->
       y = fret_number * FingerboardStyle.fret_height + FingerboardNoteStyle.all.radius + 1
       pitch = pitch_at(string_number, fret_number)
       notes.push
+        string_number: string_number
+        fret_number: fret_number
         pitch: pitch
         circle: paper.circle(x, y, FingerboardNoteStyle.all.radius).attr(FingerboardNoteStyle.all)
         label: paper.text x, y, pitch_name(pitch)
@@ -230,3 +238,12 @@ draw_fingerboard()
 fingerboard_notes = create_fingerboard_notes()
 set_scale_notes fingerboard_notes, CurrentScaleRoot
 update_scales()
+
+$('h2#instruments span').click ->
+  string_pitches = Instruments[$(@).text()]
+  for note in fingerboard_notes
+    {string_number, fret_number} = note
+    note.pitch = (string_pitches[string_number] + fret_number) % 12
+  set_scale_notes fingerboard_notes, CurrentScaleRoot
+  $('h2#instruments span').removeClass('selected')
+  $(@).addClass('selected')

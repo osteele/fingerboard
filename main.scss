@@ -10,6 +10,28 @@ h2 {
   text-align: center;
 }
 
+h2#instruments {
+  font-weight: normal;
+}
+
+h2#instruments span:hover {
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+h2#instruments .selected {
+  font-weight: bold;
+}
+
+#instruments span:before {
+  content: " | ";
+  font-weight: normal;
+}
+
+#instruments span:first-child:before {
+  content: "";
+}
+
 #fingerboard,
 #keyboard,
 #scales,
