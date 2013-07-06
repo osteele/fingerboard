@@ -1,17 +1,26 @@
 SharpNoteNames = 'C C# D D# E F F# G G# A A# B'.split(/\s/)
 FlatNoteNames = 'C Db D Eb E F Gb G Ab A Bb B'.split(/\s/)
 
-Scales =
-  'Diatonic Major': [0,2,4,5,7,9,11]
-  'Natural Minor': [0,2,3,5,7,8,10]
-  'Major Pentatonic': [0,2,4,7,9]
-  'Minor Pentatonic': [0,3,5,7,10]
-  'Melodic Minor': [0,2,3,5,7,9,11]
-  'Harmonic Minor': [0,2,3,5,7,8,11]
-  'Blues': [0,3,5,6,7,10]
-  'Freygish': [0,1,4,5,7,8,10]
-  'Whole Tone': [0,2,4,6,8,10]
-  'Octatonic': [0,2,3,5,6,8,9,11]
+Scales = [
+  {'Diatonic Major': [0,2,4,5,7,9,11]}
+  {'Natural Minor': [0,2,3,5,7,8,10]}
+  {'Major Pentatonic': [0,2,4,7,9]}
+  {'Minor Pentatonic': [0,3,5,7,10]}
+  {'Melodic Minor': [0,2,3,5,7,9,11]}
+  {'Harmonic Minor': [0,2,3,5,7,8,11]}
+  {'Blues': [0,3,5,6,7,10]}
+  {'Freygish': [0,1,4,5,7,8,10]}
+  {'Whole Tone': [0,2,4,6,8,10]}
+  {'Octatonic': [0,2,3,5,6,8,9,11]}
+]
+
+ScaleNames = (_.keys(scale)[0] for scale in Scales)
+
+do ->
+  for scale in Scales
+    name = _.keys(scale)[0]
+    pitches = scale[name]
+    Scales[name] = pitches
 
 Instruments =
   Violin: [7,14,21,28]
@@ -41,7 +50,7 @@ FingerboardNoteStyle =
       fill: 'black'
       'font-size': 20
   scale:
-    fill: 'lightBlue'
+    fill: 'lightGreen'
   root:
     fill: ScaleRootColor
     label: {'font-weight': 'bold'}
@@ -58,7 +67,7 @@ KeyboardStyle =
     fill: ScaleRootColor
   Key:
     width: 25
-    margin: 2
+    margin: 3
   WhiteKey:
     height: 120
     key:
@@ -76,7 +85,7 @@ KeyboardStyle =
 ScaleStyle =
   cols: 4
   cell:
-    width: 80
+    width: 85
     height: 90
     padding: 0
   pitch_circle:
@@ -150,7 +159,7 @@ create_scales = ->
   style = ScaleStyle
   paper = ScalePaper
   cols = style.cols
-  _.keys(Scales).sort().forEach (name, i) ->
+  ScaleNames.forEach (name, i) ->
     pitches = Scales[name]
     cell_width = style.cell.width
     cell_height = style.cell.height
@@ -188,7 +197,7 @@ create_scales = ->
     ScaleViews[name] = bg
 
 update_scales = ->
-  for name of Scales
+  ScaleNames.forEach (name, i) ->
     ScaleViews[name].animate fill: (if name == CurrentScale then 'lightBlue' else 'white')
 
 draw_fingerboard = ->
@@ -234,7 +243,7 @@ set_scale_notes = (notes, scale_root=0) ->
   update_background_scale scale_pitches
   for {pitch, circle, label} in notes
     note_type = {0: 'root', '-1': 'chromatic'}[scale_pitches.indexOf(pitch)] or 'scale'
-    note_type = 'fifth' if note_type == 'scale' and pitch == 7
+    note_type = 'fifth' if pitch in scale_pitches and (pitch - scale_pitches[0] + 12) % 12 == 7
     pitch_name_options = {sharp: true}
     pitch_name_options = {flat: true} if scale_root_name.match(/b/)
     pitch_name_options = {flat: true, sharp: true} if note_type == 'chromatic'
@@ -264,8 +273,10 @@ do ->
 update_background_scale = (scale_pitches_0) ->
   scale_pitches = Scales[CurrentScale]
   for {pitch, circle} in BackgroundScaleViews
+    pitch = (pitch + 12 + Instruments[CurrentInstrument][0]) % 12
     fill = 'white'
     fill = 'green' if pitch in scale_pitches
+    fill = 'blue' if pitch in scale_pitches and pitch == 7
     fill = 'red' if scale_pitches.indexOf(pitch) == 0
     circle.animate fill: fill, 100
   pos = $('#fingerboard').offset()
@@ -279,14 +290,16 @@ create_keyboard()
 create_scales()
 draw_fingerboard()
 fingerboard_notes = create_fingerboard_notes()
-set_scale_notes fingerboard_notes, CurrentScaleRoot
+set_scale_notes(fingerboard_notes, CurrentScaleRoot)
 update_scales()
 
 $('h2#instruments span').click ->
-  string_pitches = Instruments[$(@).text()]
+  CurrentInstrument = $(@).text()
+  string_pitches = Instruments[CurrentInstrument]
   for note in fingerboard_notes
     {string_number, fret_number} = note
     note.pitch = (string_pitches[string_number] + fret_number) % 12
   set_scale_notes fingerboard_notes, CurrentScaleRoot
   $('h2#instruments span').removeClass('selected')
   $(@).addClass('selected')
+  set_scale_notes(fingerboard_notes, CurrentScaleRoot)
