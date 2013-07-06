@@ -1,0 +1,22 @@
+{
+  "name": "fingerboard",
+  "version": "0.0.0",
+  "description": "Display violin and cello fingerboard scale positions",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:osteele/fingerboard.git"
+  },
+  "keywords": [
+    "music"
+  ],
+  "author": "Oliver Steele <steele@osteele.com> ",
+  "license": "BSD",
+  "devDependencies": {
+    "grunt": "~0.4.1",
+    "grunt-coffeelint": "0.0.7",
+    "grunt-contrib-watch": "~0.4.4",
+    "grunt-contrib-coffee": "~0.7.0",
+    "grunt-jade": "~0.4.0",
+    "grunt-contrib-jade": "~0.7.0"
+  }
+}
