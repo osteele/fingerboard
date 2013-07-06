@@ -18,3 +18,12 @@ h2 {
   float: left;
   padding: 5px;
 }
+
+#forkme {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 149px;
+  height: 149px;
+  background: url(https://s3.amazonaws.com/github/ribbons/forkme_right_green_007200.png)
+}

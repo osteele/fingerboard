@@ -14,6 +14,9 @@ module.exports = (grunt) ->
       app: ['**/*.coffee']
       options:
         max_line_length: { value: 120 }
+    githubPages:
+      target:
+        src: 'build'
     jade:
       compile:
         options:
@@ -43,5 +46,8 @@ module.exports = (grunt) ->
   grunt.loadNpmTasks 'grunt-contrib-jade'
   grunt.loadNpmTasks 'grunt-contrib-sass'
   grunt.loadNpmTasks 'grunt-contrib-watch'
+  grunt.loadNpmTasks 'grunt-github-pages'
 
+  grunt.registerTask 'build', ['jade', 'sass', 'coffee']
+  grunt.registerTask 'deploy', ['build', 'githubPages:target']
   grunt.registerTask 'default', ['watch']
