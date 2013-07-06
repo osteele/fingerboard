@@ -29,6 +29,8 @@ FingerboardStyle =
   string_width: 50
   fret_height: 50
 
+ScaleRootColor = 'rgb(255,96,96)'
+
 FingerboardNoteStyle =
   all:
     radius: 20
@@ -41,7 +43,7 @@ FingerboardNoteStyle =
   scale:
     fill: 'lightBlue'
   root:
-    fill: 'red'
+    fill: ScaleRootColor
     label: {'font-weight': 'bold'}
   fifth: {fill: 'rgb(192,192,255)'}
   chromatic:
@@ -52,6 +54,8 @@ FingerboardNoteStyle =
     label: {fill: 'gray', 'font-size': 15}
 
 KeyboardStyle =
+  root:
+    fill: ScaleRootColor
   Key:
     width: 25
     margin: 2
@@ -79,6 +83,10 @@ ScaleStyle =
     radius: 28
     note:
       radius: 3
+    root:
+      fill: 'rgb(255,128,128)'
+    fifth:
+      fill: 'rgb(128,128,255)'
 
 FingerboardPaper = Raphael('fingerboard',
   StringCount * FingerboardStyle.string_width,
@@ -134,7 +142,7 @@ create_keyboard = ->
 update_keyboard = (root_pitch) ->
   for pitch in [0...12]
     note_view = KeyboardViews[pitch]
-    note_view.key.animate fill: (if pitch == root_pitch then 'red' else note_view.style.key.fill), 100
+    note_view.key.animate fill: (if pitch == root_pitch then KeyboardStyle.root.fill else note_view.style.key.fill), 100
 
 ScaleViews = {}
 
@@ -165,7 +173,8 @@ create_scales = ->
         paper.path ['M',x,',',y,'L',nx,',',ny].join('')
         note_circle.attr fill: 'gray'
         note_circle.toFront()
-      note_circle.attr fill: 'red' if pitch == 0
+        note_circle.attr style.pitch_circle.root if pitch == 0
+        note_circle.attr style.pitch_circle.fifth if pitch == 7
     bg.toBack()
     hover.toFront()
     paper.setFinish()
@@ -223,7 +232,8 @@ set_scale_notes = (notes, scale_root=0) ->
   scale = Scales[CurrentScale]
   scale_pitches = ((n + scale_root) % 12 for n in scale)
   for {pitch, circle, label} in notes
-    note_type = {0: 'root', 5: 'fifth', '-1': 'chromatic'}[scale_pitches.indexOf(pitch)] or 'scale'
+    note_type = {0: 'root', '-1': 'chromatic'}[scale_pitches.indexOf(pitch)] or 'scale'
+    note_type = 'fifth' if note_type == 'scale' and pitch == 7
     pitch_name_options = {sharp: true}
     pitch_name_options = {flat: true} if scale_root_name.match(/b/)
     pitch_name_options = {flat: true, sharp: true} if note_type == 'chromatic'
