@@ -1,5 +1,5 @@
 (function() {
-  var CurrentScale, CurrentScaleRoot, FingerPositions, FingerboardNoteStyle, FingerboardPaper, FingerboardStyle, FlatNoteNames, KeyboardPaper, KeyboardStyle, KeyboardViews, ScalePaper, ScaleStyle, ScaleViews, Scales, SharpNoteNames, StringCount, create_fingerboard_notes, create_keyboard, create_scales, draw_fingerboard, fingerboard_notes, pitch_at, pitch_name, set_scale_notes, update_keyboard, update_scales,
+  var CurrentInstrument, CurrentScale, CurrentScaleRoot, FingerPositions, FingerboardNoteStyle, FingerboardPaper, FingerboardStyle, FlatNoteNames, Instruments, KeyboardPaper, KeyboardStyle, KeyboardViews, ScalePaper, ScaleStyle, ScaleViews, Scales, SharpNoteNames, StringCount, create_fingerboard_notes, create_keyboard, create_scales, draw_fingerboard, fingerboard_notes, pitch_at, pitch_name, set_scale_notes, update_keyboard, update_scales,
     __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   SharpNoteNames = 'C C# D D# E F F# G G# A A# B'.split(/\s/);
@@ -18,6 +18,14 @@
     'Whole Tone': [0, 2, 4, 6, 8, 10],
     'Octatonic': [0, 2, 3, 5, 6, 8, 9, 11]
   };
+
+  Instruments = {
+    Violin: [7, 14, 21, 28],
+    Viola: [0, 7, 14, 21],
+    Cello: [0, 7, 14, 21]
+  };
+
+  CurrentInstrument = 'Cello';
 
   CurrentScaleRoot = 'C';
 
@@ -299,6 +307,8 @@
         y = fret_number * FingerboardStyle.fret_height + FingerboardNoteStyle.all.radius + 1;
         pitch = pitch_at(string_number, fret_number);
         notes.push({
+          string_number: string_number,
+          fret_number: fret_number,
           pitch: pitch,
           circle: paper.circle(x, y, FingerboardNoteStyle.all.radius).attr(FingerboardNoteStyle.all),
           label: paper.text(x, y, pitch_name(pitch))
@@ -379,6 +389,19 @@
   set_scale_notes(fingerboard_notes, CurrentScaleRoot);
 
   update_scales();
+
+  $('h2#instruments span').click(function() {
+    var fret_number, note, string_number, string_pitches, _i, _len;
+    string_pitches = Instruments[$(this).text()];
+    for (_i = 0, _len = fingerboard_notes.length; _i < _len; _i++) {
+      note = fingerboard_notes[_i];
+      string_number = note.string_number, fret_number = note.fret_number;
+      note.pitch = (string_pitches[string_number] + fret_number) % 12;
+    }
+    set_scale_notes(fingerboard_notes, CurrentScaleRoot);
+    $('h2#instruments span').removeClass('selected');
+    return $(this).addClass('selected');
+  });
 
 }).call(this);
 
