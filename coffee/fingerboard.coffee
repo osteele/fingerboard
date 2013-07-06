@@ -231,6 +231,7 @@ set_scale_notes = (notes, scale_root=0) ->
   update_keyboard scale_root
   scale = Scales[CurrentScale]
   scale_pitches = ((n + scale_root) % 12 for n in scale)
+  update_background_scale scale_pitches
   for {pitch, circle, label} in notes
     note_type = {0: 'root', '-1': 'chromatic'}[scale_pitches.indexOf(pitch)] or 'scale'
     note_type = 'fifth' if note_type == 'scale' and pitch == 7
@@ -241,6 +242,38 @@ set_scale_notes = (notes, scale_root=0) ->
     circle.animate attrs, 400
     label.attr text: pitch_name(pitch, pitch_name_options)
     label.animate _.extend({}, FingerboardNoteStyle.all.label, FingerboardNoteStyle[note_type].label), 400
+
+BackgroundScaleViews = []
+do ->
+  style = FingerboardStyle
+  string_count = 12 * 5
+  fret_count = 12
+  paper = Raphael('scale-notes', string_count * style.string_width, fret_count * style.fret_height)
+  pos = $('#fingerboard').offset()
+  pos.left += 5
+  pos.top += 4
+  $('#scale-notes').css(left: pos.left, top: pos.top)
+  for string_number in [0...string_count]
+    for fret_number in [0...fret_count]
+      pitch = (string_number * 7 + fret_number) % 12
+      x = (string_number + 0.5) * style.string_width
+      y = fret_number * style.fret_height + FingerboardNoteStyle.all.radius + 1
+      circle = paper.circle(x, y, FingerboardNoteStyle.all.radius).attr fill: 'red'
+      BackgroundScaleViews.push {pitch, circle}
+
+update_background_scale = (scale_pitches_0) ->
+  scale_pitches = Scales[CurrentScale]
+  for {pitch, circle} in BackgroundScaleViews
+    fill = 'white'
+    fill = 'green' if pitch in scale_pitches
+    fill = 'red' if scale_pitches.indexOf(pitch) == 0
+    circle.animate fill: fill, 100
+  pos = $('#fingerboard').offset()
+  pos.left += 5
+  pos.top += 4
+  style = FingerboardStyle
+  pos.left -= style.string_width * ((scale_pitches_0[0] * 5) % 12)
+  $('#scale-notes').css(left: pos.left, top: pos.top)
 
 create_keyboard()
 create_scales()

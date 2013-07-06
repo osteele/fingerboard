@@ -10,19 +10,21 @@ html(lang="en")
   body
     h1 Fingerboard Scales
 
-    div.module
+    .module
       h2#instruments
         span Violin
         span Viola
         span.selected Cello
       #fingerboard
-    div.module
+    .module
       h2 Scale root
       #keyboard
-    div.module
+    .module
       h2 Scale
       #scales
 
-    a#forkme(href="https://github.com/osteele/fingerboard")
+    #scale-notes
+
+    a#fork-me(href="https://github.com/osteele/fingerboard")
     script(src="./fingerboard.js")
     script(src="http://localhost:35729/livereload.js")
