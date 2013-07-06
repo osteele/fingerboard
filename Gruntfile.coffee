@@ -18,25 +18,30 @@ module.exports = (grunt) ->
       compile:
         options:
           client: false
-          # debug: true
           pretty: true
         files:
-          'build/index.html': ['index.jade']
+          'build/index.html': 'index.jade'
+    sass:
+      compile:
+        files:
+          'build/main.css': 'main.scss'
     watch:
       options:
         livereload: true
+      sass:
+        files: ['main.scss']
+        tasks: ['sass']
       jade:
         files: ['index.jade']
         tasks: ['jade']
       scripts:
         files: ['**/*.coffee']
         tasks: ['coffeelint', 'coffee']
-        # options:
-          # nospawn: true
 
   grunt.loadNpmTasks 'grunt-coffeelint'
   grunt.loadNpmTasks 'grunt-contrib-coffee'
-  grunt.loadNpmTasks 'grunt-contrib-watch'
   grunt.loadNpmTasks 'grunt-contrib-jade'
+  grunt.loadNpmTasks 'grunt-contrib-sass'
+  grunt.loadNpmTasks 'grunt-contrib-watch'
 
   grunt.registerTask 'default', ['watch']

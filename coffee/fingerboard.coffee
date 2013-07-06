@@ -19,13 +19,13 @@ CurrentScale = 'Diatonic Major'
 StringCount = 4
 FingerPositions = 7
 
-StringWidth = 50
-FretHeight = 50
-NoteRadius = 20
-LeftMargin = 0
+FingerboardStyle =
+  string_width: 50
+  fret_height: 50
 
-NoteStyles =
+FingerboardNoteStyle =
   all:
+    radius: 20
     stroke: 'blue'
     'fill-opacity': 1
     'stroke-opacity': 1
@@ -45,24 +45,10 @@ NoteStyles =
     'stroke-opacity': 0
     label: {fill: 'gray', 'font-size': 15}
 
-FingerboardWidth = StringCount * StringWidth
-
-paper = Raphael(10, 10, FingerboardWidth + 20 + 7 * 30 + 30, FingerPositions * FretHeight + 60)
-
-pitch_at = (string_number, fret_number) ->
-  (string_number * 7 + fret_number) % 12
-
-pitch_name = (pitch, options={}) ->
-  flatName = FlatNoteNames[pitch]
-  sharpName = SharpNoteNames[pitch]
-  name = if options.sharp then sharpName else flatName
-  if options.flat and options.sharp and flatName != sharpName
-    name = "#{flatName}/\n#{sharpName}"
-  name.replace(/b/, '\u266D').replace(/#/g, '\u266F')
-
 KeyboardStyle =
   Key:
     width: 25
+    margin: 2
   WhiteKey:
     height: 120
     key:
@@ -77,23 +63,56 @@ KeyboardStyle =
       'font-size': 12
       fill: 'white'
 
+ScaleStyle =
+  cols: 4
+  cell:
+    width: 80
+    height: 90
+    padding: 0
+  pitch_circle:
+    radius: 28
+    note:
+      radius: 3
+
+FingerboardPaper = Raphael('fingerboard',
+  StringCount * FingerboardStyle.string_width,
+  FingerPositions * FingerboardStyle.fret_height)
+
+KeyboardPaper = Raphael('keyboard',
+  7 * (KeyboardStyle.Key.width + KeyboardStyle.Key.margin),
+  KeyboardStyle.WhiteKey.height + 1)
+
+ScalePaper = Raphael('scales',
+  (ScaleStyle.cell.width + ScaleStyle.cell.padding) * ScaleStyle.cols,
+  Math.ceil(_.keys(Scales).length / ScaleStyle.cols) * (ScaleStyle.cell.height + ScaleStyle.cell.padding))
+
+pitch_at = (string_number, fret_number) ->
+  (string_number * 7 + fret_number) % 12
+
+pitch_name = (pitch, options={}) ->
+  flatName = FlatNoteNames[pitch]
+  sharpName = SharpNoteNames[pitch]
+  name = if options.sharp then sharpName else flatName
+  if options.flat and options.sharp and flatName != sharpName
+    name = "#{flatName}/\n#{sharpName}"
+  name.replace(/b/, '\u266D').replace(/#/g, '\u266F')
+
 create_keyboard = ->
-  console.info 'x'
-  next_x = FingerboardWidth + 20
+  paper = KeyboardPaper
+  next_x = 1
   black_keys = paper.set()
   [0...12].forEach (pitch) ->
     is_black_key = FlatNoteNames[pitch].length > 1
     style = _.extend {}, KeyboardStyle.Key, (if is_black_key then KeyboardStyle.BlackKey else KeyboardStyle.WhiteKey)
     {width, height} = style
     x = next_x
-    y = 0
-    next_x += width + 2 unless is_black_key
+    next_x += width + KeyboardStyle.Key.margin unless is_black_key
     x -= width / 2 if is_black_key
     note_name = pitch_name(pitch, flat: true)
 
     paper.setStart()
-    key = paper.rect(x, 10, width, height, 2).attr style.key
-    label = paper.text(x + width / 2, y + height, note_name).attr style.label
+    key = paper.rect(x, 0, width, height, 2).attr style.key
+    label = paper.text(x + width / 2, height - 10, note_name).attr style.label
     note = paper.setFinish()
       .attr(cursor: 'pointer')
       .mouseover(-> key.animate fill: 'gray', 100)
@@ -105,55 +124,60 @@ create_keyboard = ->
   black_keys.toFront()
 
 create_scales = ->
-  i = -1
-  for name, pitches of Scales
-    i += 1
-    do (name=name) ->
-      x = FingerboardWidth + 50 + (i % 3) * 80
-      y = 150 + Math.floor(i / 3) * 90
-      p = paper.rect(x - 80 / 2, y - 5, 80 - 5, 80, 2)
-        .attr(stroke: 'gray')
-        .mouseover(-> p.animate fill: 'gray')
-        .mouseout(-> p.animate fill: 'white')
-        .click ->
-          CurrentScale = name
-          set_scale_notes fingerboard_notes, CurrentScaleRoot
-      paper.text x, y, name
-      y += 40
-      for pitch in [0...12]
-        r = 30
-        a = (pitch - 3) * 2 * Math.PI / 12
-        nx = x + Math.cos(a) * r
-        ny = y + Math.sin(a) * r
-        note = paper.circle nx, ny, 2
-        if pitch in pitches
-          paper.path ['M',x,',',y,'L',nx,',',ny].join('')
-          note.attr fill: 'gray'
-        note.attr fill: 'red' if pitch == 0
-
-create_scales()
+  style = ScaleStyle
+  paper = ScalePaper
+  cols = style.cols
+  _.keys(Scales).sort().forEach (name, i) ->
+    pitches = Scales[name]
+    cell_width = style.cell.width
+    cell_height = style.cell.height
+    x = cell_width / 2 + (i % cols) * cell_width
+    y = 6 + Math.floor(i / cols) * cell_height
+    p = paper.rect(x - cell_width / 2, y - 5, cell_width - 5, cell_width, 2)
+      .attr(stroke: 'gray')
+      .mouseover(-> @animate fill: 'gray')
+      .mouseout(-> @animate fill: 'white')
+      .click ->
+        CurrentScale = name
+        set_scale_notes fingerboard_notes, CurrentScaleRoot
+    paper.text x, y, name
+    y += 40
+    for pitch in [0...12]
+      r = style.pitch_circle.radius
+      a = (pitch - 3) * 2 * Math.PI / 12
+      nx = x + Math.cos(a) * r
+      ny = y + Math.sin(a) * r
+      note_circle = paper.circle nx, ny, style.pitch_circle.note.radius
+      if pitch in pitches
+        paper.path ['M',x,',',y,'L',nx,',',ny].join('')
+        note_circle.attr fill: 'gray'
+        note_circle.toFront()
+      note_circle.attr fill: 'red' if pitch == 0
 
 draw_fingerboard = ->
+  paper = FingerboardPaper
   for string_number in [0...StringCount]
-    x = (string_number + 0.5) * StringWidth
+    x = (string_number + 0.5) * FingerboardStyle.string_width
     # draw the string
-    paper.path(['M', x, FretHeight * 0.5, 'L', x, (1 + FingerPositions) * FretHeight].join())
+    path = ['M', x, FingerboardStyle.fret_height * 0.5, 'L', x, (1 + FingerPositions) * FingerboardStyle.fret_height]
+    paper.path(path.join())
   # draw the nut
   do ->
-    y = FretHeight - 5
-    paper.path(['M', 0, y, 'L', StringCount * StringWidth, y].join())
+    y = FingerboardStyle.fret_height - 5
+    paper.path(['M', 0, y, 'L', StringCount * FingerboardStyle.string_width, y].join())
       .attr 'stroke-width': 4, stroke: 'gray'
 
 create_fingerboard_notes = ->
+  paper = FingerboardPaper
   notes = []
   for string_number in [0...StringCount]
-    x = (string_number + 0.5) * StringWidth
+    x = (string_number + 0.5) * FingerboardStyle.string_width
     for fret_number in [0..FingerPositions]
-      y = fret_number * FretHeight + NoteRadius + 1
+      y = fret_number * FingerboardStyle.fret_height + FingerboardNoteStyle.all.radius + 1
       pitch = pitch_at(string_number, fret_number)
       notes.push
         pitch: pitch
-        circle: paper.circle(x, y, NoteRadius).attr(NoteStyles.all)
+        circle: paper.circle(x, y, FingerboardNoteStyle.all.radius).attr(FingerboardNoteStyle.all)
         label: paper.text x, y, pitch_name(pitch)
   notes
 
@@ -170,12 +194,13 @@ set_scale_notes = (notes, scale_root=0) ->
     pitch_name_options = {sharp: true}
     pitch_name_options = {flat: true} if scale_root_name.match(/b/)
     pitch_name_options = {flat: true, sharp: true} if note_type == 'chromatic'
-    attrs = _.extend({}, NoteStyles.all, NoteStyles[note_type])
+    attrs = _.extend({}, FingerboardNoteStyle.all, FingerboardNoteStyle[note_type])
     circle.animate attrs, 400
     label.attr text: pitch_name(pitch, pitch_name_options)
-    label.animate _.extend({}, NoteStyles.all.label, NoteStyles[note_type].label), 400
+    label.animate _.extend({}, FingerboardNoteStyle.all.label, FingerboardNoteStyle[note_type].label), 400
 
 create_keyboard()
+create_scales()
 draw_fingerboard()
 fingerboard_notes = create_fingerboard_notes()
 set_scale_notes fingerboard_notes, CurrentScaleRoot
