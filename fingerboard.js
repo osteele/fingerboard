@@ -1,5 +1,5 @@
 (function() {
-  var CurrentInstrument, CurrentScale, CurrentScaleRoot, FingerPositions, FingerboardNoteStyle, FingerboardPaper, FingerboardStyle, FlatNoteNames, Instruments, KeyboardPaper, KeyboardStyle, KeyboardViews, ScalePaper, ScaleStyle, ScaleViews, Scales, SharpNoteNames, StringCount, create_fingerboard_notes, create_keyboard, create_scales, draw_fingerboard, fingerboard_notes, pitch_at, pitch_name, set_scale_notes, update_keyboard, update_scales,
+  var BackgroundScaleViews, CurrentInstrument, CurrentScale, CurrentScaleRoot, FingerPositions, FingerboardNoteStyle, FingerboardPaper, FingerboardStyle, FlatNoteNames, Instruments, KeyboardPaper, KeyboardStyle, KeyboardViews, ScalePaper, ScaleRootColor, ScaleStyle, ScaleViews, Scales, SharpNoteNames, StringCount, create_fingerboard_notes, create_keyboard, create_scales, draw_fingerboard, fingerboard_notes, pitch_at, pitch_name, set_scale_notes, update_background_scale, update_keyboard, update_scales,
     __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   SharpNoteNames = 'C C# D D# E F F# G G# A A# B'.split(/\s/);
@@ -40,6 +40,8 @@
     fret_height: 50
   };
 
+  ScaleRootColor = 'rgb(255,96,96)';
+
   FingerboardNoteStyle = {
     all: {
       radius: 20,
@@ -55,7 +57,7 @@
       fill: 'lightBlue'
     },
     root: {
-      fill: 'red',
+      fill: ScaleRootColor,
       label: {
         'font-weight': 'bold'
       }
@@ -76,6 +78,9 @@
   };
 
   KeyboardStyle = {
+    root: {
+      fill: ScaleRootColor
+    },
     Key: {
       width: 25,
       margin: 2
@@ -112,6 +117,12 @@
       radius: 28,
       note: {
         radius: 3
+      },
+      root: {
+        fill: 'rgb(255,128,128)'
+      },
+      fifth: {
+        fill: 'rgb(128,128,255)'
       }
     }
   };
@@ -198,7 +209,7 @@
     for (pitch = _i = 0; _i < 12; pitch = ++_i) {
       note_view = KeyboardViews[pitch];
       _results.push(note_view.key.animate({
-        fill: (pitch === root_pitch ? 'red' : note_view.style.key.fill)
+        fill: (pitch === root_pitch ? KeyboardStyle.root.fill : note_view.style.key.fill)
       }, 100));
     }
     return _results;
@@ -240,11 +251,12 @@
             fill: 'gray'
           });
           note_circle.toFront();
-        }
-        if (pitch === 0) {
-          note_circle.attr({
-            fill: 'red'
-          });
+          if (pitch === 0) {
+            note_circle.attr(style.pitch_circle.root);
+          }
+          if (pitch === 7) {
+            note_circle.attr(style.pitch_circle.fifth);
+          }
         }
       }
       bg.toBack();
@@ -346,14 +358,17 @@
       }
       return _results;
     })();
+    update_background_scale(scale_pitches);
     _results = [];
     for (_i = 0, _len = notes.length; _i < _len; _i++) {
       _ref = notes[_i], pitch = _ref.pitch, circle = _ref.circle, label = _ref.label;
       note_type = {
         0: 'root',
-        5: 'fifth',
         '-1': 'chromatic'
       }[scale_pitches.indexOf(pitch)] || 'scale';
+      if (note_type === 'scale' && pitch === 7) {
+        note_type = 'fifth';
+      }
       pitch_name_options = {
         sharp: true
       };
@@ -376,6 +391,71 @@
       _results.push(label.animate(_.extend({}, FingerboardNoteStyle.all.label, FingerboardNoteStyle[note_type].label), 400));
     }
     return _results;
+  };
+
+  BackgroundScaleViews = [];
+
+  (function() {
+    var circle, fret_count, fret_number, paper, pitch, pos, string_count, string_number, style, x, y, _i, _results;
+    style = FingerboardStyle;
+    string_count = 12 * 5;
+    fret_count = 12;
+    paper = Raphael('scale-notes', string_count * style.string_width, fret_count * style.fret_height);
+    pos = $('#fingerboard').offset();
+    pos.left += 5;
+    pos.top += 4;
+    $('#scale-notes').css({
+      left: pos.left,
+      top: pos.top
+    });
+    _results = [];
+    for (string_number = _i = 0; 0 <= string_count ? _i < string_count : _i > string_count; string_number = 0 <= string_count ? ++_i : --_i) {
+      _results.push((function() {
+        var _j, _results1;
+        _results1 = [];
+        for (fret_number = _j = 0; 0 <= fret_count ? _j < fret_count : _j > fret_count; fret_number = 0 <= fret_count ? ++_j : --_j) {
+          pitch = (string_number * 7 + fret_number) % 12;
+          x = (string_number + 0.5) * style.string_width;
+          y = fret_number * style.fret_height + FingerboardNoteStyle.all.radius + 1;
+          circle = paper.circle(x, y, FingerboardNoteStyle.all.radius).attr({
+            fill: 'red'
+          });
+          _results1.push(BackgroundScaleViews.push({
+            pitch: pitch,
+            circle: circle
+          }));
+        }
+        return _results1;
+      })());
+    }
+    return _results;
+  })();
+
+  update_background_scale = function(scale_pitches_0) {
+    var circle, fill, pitch, pos, scale_pitches, style, _i, _len, _ref;
+    scale_pitches = Scales[CurrentScale];
+    for (_i = 0, _len = BackgroundScaleViews.length; _i < _len; _i++) {
+      _ref = BackgroundScaleViews[_i], pitch = _ref.pitch, circle = _ref.circle;
+      fill = 'white';
+      if (__indexOf.call(scale_pitches, pitch) >= 0) {
+        fill = 'green';
+      }
+      if (scale_pitches.indexOf(pitch) === 0) {
+        fill = 'red';
+      }
+      circle.animate({
+        fill: fill
+      }, 100);
+    }
+    pos = $('#fingerboard').offset();
+    pos.left += 5;
+    pos.top += 4;
+    style = FingerboardStyle;
+    pos.left -= style.string_width * ((scale_pitches_0[0] * 5) % 12);
+    return $('#scale-notes').css({
+      left: pos.left,
+      top: pos.top
+    });
   };
 
   create_keyboard();

@@ -28,11 +28,19 @@ h2#instruments .selected {
 #fingerboard,
 #keyboard,
 #scales,
-.fl {
+.module {
   float: left;
   padding: 5px; }
 
-#forkme {
+#scale-notes {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: -1;
+  opacity: 0.1;
+  -webkit-transition: left 2s, top 2s, -webkit-transform 2s; }
+
+#fork-me {
   position: absolute;
   right: 0;
   top: 0;
