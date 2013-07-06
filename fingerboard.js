@@ -1,0 +1,387 @@
+(function() {
+  var CurrentScale, CurrentScaleRoot, FingerPositions, FingerboardNoteStyle, FingerboardPaper, FingerboardStyle, FlatNoteNames, KeyboardPaper, KeyboardStyle, KeyboardViews, ScalePaper, ScaleStyle, ScaleViews, Scales, SharpNoteNames, StringCount, create_fingerboard_notes, create_keyboard, create_scales, draw_fingerboard, fingerboard_notes, pitch_at, pitch_name, set_scale_notes, update_keyboard, update_scales,
+    __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+
+  SharpNoteNames = 'C C# D D# E F F# G G# A A# B'.split(/\s/);
+
+  FlatNoteNames = 'C Db D Eb E F Gb G Ab A Bb B'.split(/\s/);
+
+  Scales = {
+    'Diatonic Major': [0, 2, 4, 5, 7, 9, 11],
+    'Natural Minor': [0, 2, 3, 5, 7, 8, 10],
+    'Major Pentatonic': [0, 2, 4, 7, 9],
+    'Minor Pentatonic': [0, 3, 5, 7, 10],
+    'Melodic Minor': [0, 2, 3, 5, 7, 9, 11],
+    'Harmonic Minor': [0, 2, 3, 5, 7, 8, 11],
+    'Blues': [0, 3, 5, 6, 7, 10],
+    'Freygish': [0, 1, 4, 5, 7, 8, 10],
+    'Whole Tone': [0, 2, 4, 6, 8, 10],
+    'Octatonic': [0, 2, 3, 5, 6, 8, 9, 11]
+  };
+
+  CurrentScaleRoot = 'C';
+
+  CurrentScale = 'Diatonic Major';
+
+  StringCount = 4;
+
+  FingerPositions = 7;
+
+  FingerboardStyle = {
+    string_width: 50,
+    fret_height: 50
+  };
+
+  FingerboardNoteStyle = {
+    all: {
+      radius: 20,
+      stroke: 'blue',
+      'fill-opacity': 1,
+      'stroke-opacity': 1,
+      label: {
+        fill: 'black',
+        'font-size': 20
+      }
+    },
+    scale: {
+      fill: 'lightBlue'
+    },
+    root: {
+      fill: 'red',
+      label: {
+        'font-weight': 'bold'
+      }
+    },
+    fifth: {
+      fill: 'rgb(192,192,255)'
+    },
+    chromatic: {
+      stroke: 'white',
+      fill: 'white',
+      'fill-opacity': 0,
+      'stroke-opacity': 0,
+      label: {
+        fill: 'gray',
+        'font-size': 15
+      }
+    }
+  };
+
+  KeyboardStyle = {
+    Key: {
+      width: 25,
+      margin: 2
+    },
+    WhiteKey: {
+      height: 120,
+      key: {
+        fill: 'white'
+      },
+      label: {
+        'font-size': 20
+      }
+    },
+    BlackKey: {
+      height: 90,
+      key: {
+        fill: 'black'
+      },
+      label: {
+        'font-size': 12,
+        fill: 'white'
+      }
+    }
+  };
+
+  ScaleStyle = {
+    cols: 4,
+    cell: {
+      width: 80,
+      height: 90,
+      padding: 0
+    },
+    pitch_circle: {
+      radius: 28,
+      note: {
+        radius: 3
+      }
+    }
+  };
+
+  FingerboardPaper = Raphael('fingerboard', StringCount * FingerboardStyle.string_width, FingerPositions * FingerboardStyle.fret_height);
+
+  KeyboardPaper = Raphael('keyboard', 7 * (KeyboardStyle.Key.width + KeyboardStyle.Key.margin), KeyboardStyle.WhiteKey.height + 1);
+
+  ScalePaper = Raphael('scales', (ScaleStyle.cell.width + ScaleStyle.cell.padding) * ScaleStyle.cols, Math.ceil(_.keys(Scales).length / ScaleStyle.cols) * (ScaleStyle.cell.height + ScaleStyle.cell.padding));
+
+  pitch_at = function(string_number, fret_number) {
+    return (string_number * 7 + fret_number) % 12;
+  };
+
+  pitch_name = function(pitch, options) {
+    var flatName, name, sharpName;
+    if (options == null) {
+      options = {};
+    }
+    flatName = FlatNoteNames[pitch];
+    sharpName = SharpNoteNames[pitch];
+    name = options.sharp ? sharpName : flatName;
+    if (options.flat && options.sharp && flatName !== sharpName) {
+      name = "" + flatName + "/\n" + sharpName;
+    }
+    return name.replace(/b/, '\u266D').replace(/#/g, '\u266F');
+  };
+
+  create_keyboard = function() {
+    var black_keys, next_x, paper;
+    paper = KeyboardPaper;
+    next_x = 1;
+    black_keys = paper.set();
+    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].forEach(function(pitch) {
+      var height, hover, is_black_key, key, label, note_name, note_view, style, width, x;
+      is_black_key = FlatNoteNames[pitch].length > 1;
+      style = _.extend({}, KeyboardStyle.Key, (is_black_key ? KeyboardStyle.BlackKey : KeyboardStyle.WhiteKey));
+      width = style.width, height = style.height;
+      x = next_x;
+      if (!is_black_key) {
+        next_x += width + KeyboardStyle.Key.margin;
+      }
+      if (is_black_key) {
+        x -= width / 2;
+      }
+      note_name = pitch_name(pitch, {
+        flat: true
+      });
+      paper.setStart();
+      key = paper.rect(x, 0, width, height, 2).attr(style.key);
+      label = paper.text(x + width / 2, height - 10, note_name).attr(style.label);
+      hover = paper.rect(x, 0, width, height).attr({
+        fill: (is_black_key ? 'white' : 'black'),
+        'fill-opacity': 0
+      });
+      note_view = paper.setFinish().attr({
+        cursor: 'pointer'
+      }).mouseover(function() {
+        return hover.animate({
+          'fill-opacity': 0.4
+        }, 100);
+      }).mouseout(function() {
+        return hover.animate({
+          'fill-opacity': 0
+        }, 100);
+      }).click(function() {
+        CurrentScaleRoot = pitch;
+        return set_scale_notes(fingerboard_notes, pitch);
+      });
+      if (is_black_key) {
+        black_keys.push(note_view);
+      }
+      return KeyboardViews[pitch] = {
+        key: key,
+        style: style
+      };
+    });
+    return black_keys.toFront();
+  };
+
+  update_keyboard = function(root_pitch) {
+    var note_view, pitch, _i, _results;
+    _results = [];
+    for (pitch = _i = 0; _i < 12; pitch = ++_i) {
+      note_view = KeyboardViews[pitch];
+      _results.push(note_view.key.animate({
+        fill: (pitch === root_pitch ? 'red' : note_view.style.key.fill)
+      }, 100));
+    }
+    return _results;
+  };
+
+  ScaleViews = {};
+
+  create_scales = function() {
+    var cols, paper, style;
+    style = ScaleStyle;
+    paper = ScalePaper;
+    cols = style.cols;
+    return _.keys(Scales).sort().forEach(function(name, i) {
+      var a, bg, cell_height, cell_width, hover, note_circle, nx, ny, pitch, pitches, r, x, y, _i;
+      pitches = Scales[name];
+      cell_width = style.cell.width;
+      cell_height = style.cell.height;
+      x = cell_width / 2 + (i % cols) * cell_width;
+      y = 6 + Math.floor(i / cols) * cell_height;
+      paper.setStart();
+      bg = paper.rect(x - cell_width / 2, y - 5, cell_width - 5, cell_width, 2).attr({
+        stroke: 'gray'
+      });
+      hover = paper.rect(x - cell_width / 2, y - 5, cell_width - 5, cell_width, 2).attr({
+        fill: 'gray',
+        'fill-opacity': 0
+      });
+      paper.text(x, y, name);
+      y += 40;
+      for (pitch = _i = 0; _i < 12; pitch = ++_i) {
+        r = style.pitch_circle.radius;
+        a = (pitch - 3) * 2 * Math.PI / 12;
+        nx = x + Math.cos(a) * r;
+        ny = y + Math.sin(a) * r;
+        note_circle = paper.circle(nx, ny, style.pitch_circle.note.radius);
+        if (__indexOf.call(pitches, pitch) >= 0) {
+          paper.path(['M', x, ',', y, 'L', nx, ',', ny].join(''));
+          note_circle.attr({
+            fill: 'gray'
+          });
+          note_circle.toFront();
+        }
+        if (pitch === 0) {
+          note_circle.attr({
+            fill: 'red'
+          });
+        }
+      }
+      bg.toBack();
+      hover.toFront();
+      paper.setFinish().attr({
+        cursor: 'pointer'
+      }).mouseover(function() {
+        return hover.animate({
+          'fill-opacity': 0.4
+        });
+      }).mouseout(function() {
+        return hover.animate({
+          'fill-opacity': 0
+        });
+      }).click(function() {
+        CurrentScale = name;
+        set_scale_notes(fingerboard_notes, CurrentScaleRoot);
+        return update_scales();
+      });
+      return ScaleViews[name] = bg;
+    });
+  };
+
+  update_scales = function() {
+    var name, _results;
+    _results = [];
+    for (name in Scales) {
+      _results.push(ScaleViews[name].animate({
+        fill: (name === CurrentScale ? 'lightBlue' : 'white')
+      }));
+    }
+    return _results;
+  };
+
+  draw_fingerboard = function() {
+    var paper, path, string_number, x, _i;
+    paper = FingerboardPaper;
+    for (string_number = _i = 0; 0 <= StringCount ? _i < StringCount : _i > StringCount; string_number = 0 <= StringCount ? ++_i : --_i) {
+      x = (string_number + 0.5) * FingerboardStyle.string_width;
+      path = ['M', x, FingerboardStyle.fret_height * 0.5, 'L', x, (1 + FingerPositions) * FingerboardStyle.fret_height];
+      paper.path(path.join());
+    }
+    return (function() {
+      var y;
+      y = FingerboardStyle.fret_height - 5;
+      return paper.path(['M', 0, y, 'L', StringCount * FingerboardStyle.string_width, y].join()).attr({
+        'stroke-width': 4,
+        stroke: 'gray'
+      });
+    })();
+  };
+
+  create_fingerboard_notes = function() {
+    var fret_number, notes, paper, pitch, string_number, x, y, _i, _j;
+    paper = FingerboardPaper;
+    notes = [];
+    for (string_number = _i = 0; 0 <= StringCount ? _i < StringCount : _i > StringCount; string_number = 0 <= StringCount ? ++_i : --_i) {
+      x = (string_number + 0.5) * FingerboardStyle.string_width;
+      for (fret_number = _j = 0; 0 <= FingerPositions ? _j <= FingerPositions : _j >= FingerPositions; fret_number = 0 <= FingerPositions ? ++_j : --_j) {
+        y = fret_number * FingerboardStyle.fret_height + FingerboardNoteStyle.all.radius + 1;
+        pitch = pitch_at(string_number, fret_number);
+        notes.push({
+          pitch: pitch,
+          circle: paper.circle(x, y, FingerboardNoteStyle.all.radius).attr(FingerboardNoteStyle.all),
+          label: paper.text(x, y, pitch_name(pitch))
+        });
+      }
+    }
+    return notes;
+  };
+
+  KeyboardViews = {};
+
+  set_scale_notes = function(notes, scale_root) {
+    var attrs, circle, label, n, note_type, pitch, pitch_name_options, scale, scale_pitches, scale_root_name, _i, _len, _ref, _results;
+    if (scale_root == null) {
+      scale_root = 0;
+    }
+    scale_root_name = scale_root;
+    if (typeof scale_root === 'string') {
+      scale_root = FlatNoteNames.indexOf(scale_root_name);
+      if (!(scale_root >= 0)) {
+        scale_root = SharpNoteNames.indexOf(scale_root_name);
+      }
+    }
+    if (typeof scale_root_name !== 'string') {
+      scale_root_name = FlatNoteNames[scale_root];
+    }
+    update_keyboard(scale_root);
+    scale = Scales[CurrentScale];
+    scale_pitches = (function() {
+      var _i, _len, _results;
+      _results = [];
+      for (_i = 0, _len = scale.length; _i < _len; _i++) {
+        n = scale[_i];
+        _results.push((n + scale_root) % 12);
+      }
+      return _results;
+    })();
+    _results = [];
+    for (_i = 0, _len = notes.length; _i < _len; _i++) {
+      _ref = notes[_i], pitch = _ref.pitch, circle = _ref.circle, label = _ref.label;
+      note_type = {
+        0: 'root',
+        5: 'fifth',
+        '-1': 'chromatic'
+      }[scale_pitches.indexOf(pitch)] || 'scale';
+      pitch_name_options = {
+        sharp: true
+      };
+      if (scale_root_name.match(/b/)) {
+        pitch_name_options = {
+          flat: true
+        };
+      }
+      if (note_type === 'chromatic') {
+        pitch_name_options = {
+          flat: true,
+          sharp: true
+        };
+      }
+      attrs = _.extend({}, FingerboardNoteStyle.all, FingerboardNoteStyle[note_type]);
+      circle.animate(attrs, 400);
+      label.attr({
+        text: pitch_name(pitch, pitch_name_options)
+      });
+      _results.push(label.animate(_.extend({}, FingerboardNoteStyle.all.label, FingerboardNoteStyle[note_type].label), 400));
+    }
+    return _results;
+  };
+
+  create_keyboard();
+
+  create_scales();
+
+  draw_fingerboard();
+
+  fingerboard_notes = create_fingerboard_notes();
+
+  set_scale_notes(fingerboard_notes, CurrentScaleRoot);
+
+  update_scales();
+
+}).call(this);
+
+/*
+//@ sourceMappingURL=fingerboard.js.map
+*/
