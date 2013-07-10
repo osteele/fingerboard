@@ -1,6 +1,6 @@
 SharpNoteNames = 'C C# D D# E F F# G G# A A# B'.split(/\s/)
 FlatNoteNames = 'C Db D Eb E F Gb G Ab A Bb B'.split(/\s/)
-ScaleDegreeNames = '1 2b 2 3b 3 4 5b 5 6b 6 7b 7'.replace(/b/, '\u266D').split(/\s/)
+ScaleDegreeNames = '1 2b 2 3b 3 4 5b 5 6b 6 7b 7'.replace(/b/g, '\u266D').split(/\s/)
 
 Scales = [
   {'Diatonic Major': [0,2,4,5,7,9,11]}
@@ -208,6 +208,7 @@ class ScaleSelectorView
 
 class FingerboardView
   constructor: ->
+    @note_display = 'notes'
     @draw_fingerboard()
     @create_fingerboard_notes()
 
@@ -226,25 +227,43 @@ class FingerboardView
 
   create_fingerboard_notes: ->
     paper = @get_paper()
-    notes = []
+    @note_views = notes = []
+    @note_sets =
+      notes: paper.set()
+      fingerings: paper.set()
+      scale_degrees: paper.set()
     for string_number in [0...StringCount]
       x = (string_number + 0.5) * FingerboardStyle.string_width
       for fret_number in [0..FingerPositions]
         y = fret_number * FingerboardStyle.fret_height + FingerboardNoteStyle.all.radius + 1
         pitch = pitch_at(string_number, fret_number)
-        notes.push
-          string_number: string_number
-          fret_number: fret_number
-          pitch: pitch
-          circle: paper.circle(x, y, FingerboardNoteStyle.all.radius).attr(FingerboardNoteStyle.all)
-          label: paper.text x, y, pitch_name(pitch)
-    @note_views = notes
+        circle = paper.circle(x, y, FingerboardNoteStyle.all.radius).attr(FingerboardNoteStyle.all)
+        note_label = paper.text x, y, pitch_name(pitch)
+        fingering_label = paper.text x, y, String(Math.ceil(fret_number / 2))
+        scale_degree_label = paper.text x, y, ScaleDegreeNames[pitch]
+        @note_sets.notes.push note_label
+        @note_sets.fingerings.push fingering_label
+        @note_sets.scale_degrees.push scale_degree_label
+        notes.push {
+          string_number
+          fret_number
+          pitch
+          circle
+          note_label
+          fingering_label
+          scale_degree_label
+        }
 
   get_paper: ->
     style = FingerboardStyle
     @paper or= Raphael('fingerboard', StringCount * style.string_width, FingerPositions * style.fret_height)
 
   update: ->
+    for k, v of @note_sets
+      if k == @note_display
+        v.show()
+      else
+        v.hide()
     scale_root = State.scale_root
     scale_root_name = scale_root
     if typeof(scale_root) == 'string'
@@ -255,16 +274,27 @@ class FingerboardView
     scale = Scales[State.scale_class_name]
     scale_pitches = ((n + scale_root) % 12 for n in scale)
     noteGridView.update_background_scale scale_pitches
-    for {pitch, circle, label} in @note_views
+    for view in @note_views
+      {pitch, circle} = view
       note_type = {0: 'root', '-1': 'chromatic'}[scale_pitches.indexOf(pitch)] or 'scale'
-      note_type = 'fifth' if pitch in scale_pitches and (pitch - scale_pitches[0] + 12) % 12 == 7
+      scale_degree = (pitch - scale_pitches[0] + 12) % 12
+      note_type = 'fifth' if pitch in scale_pitches and scale_degree == 7
       pitch_name_options = {sharp: true}
       pitch_name_options = {flat: true} if scale_root_name.match(/b/)
       pitch_name_options = {flat: true, sharp: true} if note_type == 'chromatic'
       attrs = _.extend({}, FingerboardNoteStyle.all, FingerboardNoteStyle[note_type])
       circle.animate attrs, 400
-      label.attr text: pitch_name(pitch, pitch_name_options)
+      view.note_label.attr text: pitch_name(pitch, pitch_name_options)
+      view.scale_degree_label.attr text: ScaleDegreeNames[scale_degree]
+      label = view[@note_display.replace(/s$/, '_label')]
       label.animate _.extend({}, FingerboardNoteStyle.all.label, FingerboardNoteStyle[note_type].label), 400
+
+  update_instrument: ->
+    string_pitches = Instruments[State.instrument_name]
+    for note in @note_views
+      {string_number, fret_number} = note
+      note.pitch = (string_pitches[string_number] + fret_number) % 12
+    @update()
 
 
 class NoteGridView
@@ -284,23 +314,24 @@ class NoteGridView
         x = (string_number + 0.5) * style.string_width
         y = fret_number * style.fret_height + FingerboardNoteStyle.all.radius + 1
         circle = paper.circle(x, y, FingerboardNoteStyle.all.radius).attr fill: 'red'
+        paper.text(x, y, ScaleDegreeNames[pitch]).attr fill: 'white', 'font-size': 16
         @views.push {pitch, circle}
 
   update_background_scale: (scale_pitches_0) ->
     scale_pitches = Scales[State.scale_class_name]
     for {pitch, circle} in @views
-      pitch = (pitch + 12 + Instruments[State.instrument_name][0]) % 12
+      pitch = (pitch + Instruments[State.instrument_name][0] + 12) % 12
       fill = 'white'
       fill = 'green' if pitch in scale_pitches
       fill = 'blue' if pitch in scale_pitches and pitch == 7
       fill = 'red' if scale_pitches.indexOf(pitch) == 0
-      circle.animate fill: fill, 100
+      circle.attr fill: fill
     pos = $('#fingerboard').offset()
     pos.left += 5
     pos.top += 4
     style = FingerboardStyle
     pos.left -= style.string_width * ((scale_pitches_0[0] * 5) % 12)
-    # $('#scale-notes').addClass('animate')
+    $('#scale-notes').addClass('animate')
     $('#scale-notes').css(left: pos.left, top: pos.top)
 
 scaleSelectorView = new ScaleSelectorView
@@ -311,12 +342,14 @@ keyboardView = new KeyboardView
 fingerboardView.update()
 scaleSelectorView.update()
 
-$('h2#instruments span').click ->
+$('#instruments li').click ->
+  $('#instruments li').removeClass('active')
+  $(@).addClass('active')
   State.instrument_name = $(@).text()
-  string_pitches = Instruments[State.instrument_name]
-  for note in fingerboard_notes
-    {string_number, fret_number} = note
-    note.pitch = (string_pitches[string_number] + fret_number) % 12
+  fingerboardView.update_instrument()
+
+$('#fingerings li').click ->
+  $('#fingerings li').removeClass('active')
+  $(@).addClass('active')
+  fingerboardView.note_display = $(@).text().replace(' ', '_').toLowerCase()
   fingerboardView.update()
-  $('h2#instruments span').removeClass('selected')
-  $(@).addClass('selected')

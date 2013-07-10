@@ -1,7 +1,7 @@
 h1 {
   padding: 0;
-  margin: 0;
-  font-size: large;
+  // margin: 0;
+  // font-size: large;
 }
 
 h2 {
@@ -10,26 +10,23 @@ h2 {
   text-align: center;
 }
 
-h2#instruments {
+ul.nav {
   font-weight: normal;
-}
+  list-style-type:none;
+  margin: 0;
+  padding: 0;
+  text-align: center;
 
-h2#instruments span:hover {
-  cursor: pointer;
-  text-decoration: underline;
-}
+  li { display: inline; }
 
-h2#instruments .selected {
-  font-weight: bold;
-}
+  li:hover {
+    cursor: pointer;
+    text-decoration: underline;
+  }
 
-#instruments span:before {
-  content: " | ";
-  font-weight: normal;
-}
-
-#instruments span:first-child:before {
-  content: "";
+  .active {
+    font-weight: bold;
+  }
 }
 
 #fingerboard,
@@ -47,11 +44,13 @@ h2#instruments .selected {
   top: 0;
   z-index: -1;
   opacity: 0.1;
+  max-width: 100%;
+  overflow: hidden;
   -webkit-transform: translate3d(0,0,0);
-}
 
-#scale-notes.animate {
-  -webkit-transition: left 2s, top 2s, -webkit-transform 2s;
+  &.animate {
+    -webkit-transition: left 2s, top 2s, -webkit-transform 2s;
+  }
 }
 
 #fork-me {
