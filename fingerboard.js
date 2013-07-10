@@ -521,7 +521,3 @@
   });
 
 }).call(this);
-
-/*
-//@ sourceMappingURL=fingerboard.js.map
-*/
