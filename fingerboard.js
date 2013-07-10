@@ -508,7 +508,7 @@
 
   NoteGridView = (function() {
     function NoteGridView() {
-      var circle, fret_count, fret_number, paper, pitch, pos, string_count, string_number, style, x, y, _i, _j;
+      var circle, fret_count, fret_number, label, paper, pitch, pos, string_count, string_number, style, x, y, _i, _j;
       this.views = [];
       style = FingerboardStyle;
       string_count = 12 * 5;
@@ -529,24 +529,25 @@
           circle = paper.circle(x, y, FingerboardNoteStyle.all.radius).attr({
             fill: 'red'
           });
-          paper.text(x, y, ScaleDegreeNames[pitch]).attr({
+          label = paper.text(x, y, ScaleDegreeNames[pitch]).attr({
             fill: 'white',
             'font-size': 16
           });
           this.views.push({
             pitch: pitch,
-            circle: circle
+            circle: circle,
+            label: label
           });
         }
       }
     }
 
     NoteGridView.prototype.update_background_scale = function(scale_pitches_0) {
-      var circle, fill, pitch, pos, scale_pitches, style, _i, _len, _ref, _ref1;
+      var circle, fill, label, pitch, pos, scale_pitches, style, _i, _len, _ref, _ref1;
       scale_pitches = Scales[State.scale_class_name];
       _ref = this.views;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        _ref1 = _ref[_i], pitch = _ref1.pitch, circle = _ref1.circle;
+        _ref1 = _ref[_i], pitch = _ref1.pitch, circle = _ref1.circle, label = _ref1.label;
         pitch = (pitch + Instruments[State.instrument_name][0] + 12) % 12;
         fill = 'white';
         if (__indexOf.call(scale_pitches, pitch) >= 0) {
@@ -560,6 +561,9 @@
         }
         circle.attr({
           fill: fill
+        });
+        label.attr({
+          text: pitch
         });
       }
       pos = $('#fingerboard').offset();
