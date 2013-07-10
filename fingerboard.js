@@ -563,7 +563,7 @@
           fill: fill
         });
         label.attr({
-          text: pitch
+          text: ScaleDegreeNames[pitch]
         });
       }
       pos = $('#fingerboard').offset();
