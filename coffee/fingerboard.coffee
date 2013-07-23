@@ -1,6 +1,6 @@
 SharpNoteNames = 'C C# D D# E F F# G G# A A# B'.split(/\s/)
 FlatNoteNames = 'C Db D Eb E F Gb G Ab A Bb B'.split(/\s/)
-ScaleDegreeNames = '1 2b 2 3b 3 4 5b 5 6b 6 7b 7'.replace(/b/g, '\u266D').split(/\s/)
+ScaleDegreeNames = '1 2b 2 3b 3 4 5b 5 6b 6 7b 7'.replace(/(\d)/g, '$1\u0302').replace(/b/g, '\u266D').split(/\s/)
 
 Scales = [
   {'Diatonic Major': [0,2,4,5,7,9,11]}
@@ -314,18 +314,19 @@ class NoteGridView
         x = (string_number + 0.5) * style.string_width
         y = fret_number * style.fret_height + FingerboardNoteStyle.all.radius + 1
         circle = paper.circle(x, y, FingerboardNoteStyle.all.radius).attr fill: 'red'
-        paper.text(x, y, ScaleDegreeNames[pitch]).attr fill: 'white', 'font-size': 16
-        @views.push {pitch, circle}
+        label = paper.text(x, y, ScaleDegreeNames[pitch]).attr fill: 'white', 'font-size': 16
+        @views.push {pitch, circle, label}
 
   update_background_scale: (scale_pitches_0) ->
     scale_pitches = Scales[State.scale_class_name]
-    for {pitch, circle} in @views
+    for {pitch, circle, label} in @views
       pitch = (pitch + Instruments[State.instrument_name][0] + 12) % 12
       fill = 'white'
       fill = 'green' if pitch in scale_pitches
       fill = 'blue' if pitch in scale_pitches and pitch == 7
       fill = 'red' if scale_pitches.indexOf(pitch) == 0
       circle.attr fill: fill
+      label.attr text: ScaleDegreeNames[pitch]
     pos = $('#fingerboard').offset()
     pos.left += 5
     pos.top += 4
