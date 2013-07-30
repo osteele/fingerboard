@@ -3,30 +3,32 @@ html(lang="en")
   head
     title Fingerboard Scales
     meta(http-equiv="content-type", content="text/html; charset=UTF-8")
-    link(href="#{cdn_scheme}//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css", rel="stylesheet")
-    link(rel="stylesheet", type="text/css", href="./main.css")
+    link(href="#{cdn_scheme}//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css", rel="stylesheet", type="text/css")
+    link(href="./main.css", rel="stylesheet", type="text/css")
     script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/raphael/2.1.0/raphael-min.js")
     script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js")
-    script(src="#{cdn_scheme}//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js")
+    script(src="#{cdn_scheme}//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js")
     script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js")
   body
     h1 Fingerboard Scales
 
-    .module
-      ul.nav#instruments
-        li Violin
-        li Viola
-        li.active Cello
+    .module.panel
+      #instruments.nav.nav-tabs
+        li.btn.navbar-btn.btn-default(type="button") Violin
+        li.btn.navbar-btn(type="button") Viola
+        li.btn.navbar-btn(type="button") Cello
       #fingerboard
-      ul.nav#fingerings
-        li.active Notes
-        li Fingerings
-        li Scale Degrees
-    .module
-      h2 Scale root
+      #fingerings.btn-group
+        button.btn.btn-default(type="button") Notes
+        button.btn(type="button") Fingerings
+        button.btn(type="button") Scale Degrees
+
+    .module.panel
+      h2.panel-title Scale root
       #keyboard
-    .module
-      h2 Scale
+
+    .module.panel
+      h3.panel-title Scale
       #scales
 
     #scale-notes

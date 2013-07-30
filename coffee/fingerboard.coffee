@@ -343,14 +343,14 @@ keyboardView = new KeyboardView
 fingerboardView.update()
 scaleSelectorView.update()
 
-$('#instruments li').click ->
-  $('#instruments li').removeClass('active')
-  $(@).addClass('active')
+$('#instruments .btn').click ->
+  $('#instruments .btn').removeClass('btn-default')
+  $(@).addClass('btn-default')
   State.instrument_name = $(@).text()
   fingerboardView.update_instrument()
 
-$('#fingerings li').click ->
-  $('#fingerings li').removeClass('active')
-  $(@).addClass('active')
+$('#fingerings .btn').click ->
+  $('#fingerings .btn').removeClass('btn-default')
+  $(@).addClass('btn-default')
   fingerboardView.note_display = $(@).text().replace(' ', '_').toLowerCase()
   fingerboardView.update()
