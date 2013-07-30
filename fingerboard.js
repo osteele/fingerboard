@@ -6,7 +6,7 @@
 
   FlatNoteNames = 'C Db D Eb E F Gb G Ab A Bb B'.split(/\s/);
 
-  ScaleDegreeNames = '1 2b 2 3b 3 4 5b 5 6b 6 7b 7'.replace(/b/g, '\u266D').split(/\s/);
+  ScaleDegreeNames = '1 2b 2 3b 3 4 5b 5 6b 6 7b 7'.replace(/(\d)/g, '$1\u0302').replace(/b/g, '\u266D').split(/\s/);
 
   Scales = [
     {
@@ -594,16 +594,16 @@
 
   scaleSelectorView.update();
 
-  $('#instruments li').click(function() {
-    $('#instruments li').removeClass('active');
-    $(this).addClass('active');
+  $('#instruments .btn').click(function() {
+    $('#instruments .btn').removeClass('btn-default');
+    $(this).addClass('btn-default');
     State.instrument_name = $(this).text();
     return fingerboardView.update_instrument();
   });
 
-  $('#fingerings li').click(function() {
-    $('#fingerings li').removeClass('active');
-    $(this).addClass('active');
+  $('#fingerings .btn').click(function() {
+    $('#fingerings .btn').removeClass('btn-default');
+    $(this).addClass('btn-default');
     fingerboardView.note_display = $(this).text().replace(' ', '_').toLowerCase();
     return fingerboardView.update();
   });
