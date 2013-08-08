@@ -5,6 +5,7 @@ html(lang="en")
     meta(http-equiv="content-type", content="text/html; charset=UTF-8")
     link(href="#{cdn_scheme}//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css", rel="stylesheet", type="text/css")
     link(href="./main.css", rel="stylesheet", type="text/css")
+    link(href="http://fonts.googleapis.com/css?family=Abel|Open+Sans:400,600", rel="stylesheet")
     script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/raphael/2.1.0/raphael-min.js")
     script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js")
     script(src="#{cdn_scheme}//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js")
@@ -34,6 +35,17 @@ html(lang="en")
     #scale-notes
 
     a#fork-me(href="https://github.com/osteele/fingerboard")
+
+    #footer
+      small.muted.credit
+        a(href="http://www.flickr.com/photos/mitch98000/3320576686/") Background picture
+        = ' by '
+        a(href="http://www.flickr.com/photos/mitch98000/") mitch98000 @flickr
+        = '. Used under '
+        a(href="http://creativecommons.org/licenses/by/2.0/deed.en") Creative Commons - Attribution
+        | .
+
     script(src="./fingerboard.js")
+
     if debug
       script(src="http://localhost:35729/livereload.js")

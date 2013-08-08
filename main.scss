@@ -1,9 +1,35 @@
-.module
-{
+/* http://css-tricks.com/perfect-full-page-background-image/ */
+html {
+  background: url(img/violin-scroll.jpg) no-repeat center center fixed;
+  -webkit-background-size: cover;
+  -moz-background-size: cover;
+  -o-background-size: cover;
+  background-size: cover;
+}
+
+body {
+  background: transparent;
+  font-size: 16px;
+  font-family: "Open Sans", serif;
+}
+
+h1 {
+  font-family: "Abel", Arial, sans-serif;
+  font-weight: 400;
+  font-size: 40px;
+  padding-left: 10px;
+  color: white;
+}
+
+.module {
   float: left;
   padding: 5px;
   margin: 5px;
-  background: rgba(255,255,255,.5);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.margin-base-vertical {
+    margin: 40px 0;
 }
 
 #scale-notes {
@@ -14,7 +40,7 @@
   opacity: 0.1;
   max-width: 100%;
   overflow: hidden;
-  -webkit-transform: translate3d(0,0,0);
+  -webkit-transform: translate3d(0, 0, 0);
 
   &.animate {
     -webkit-transition: left 2s, top 2s, -webkit-transform 2s;
@@ -29,3 +55,14 @@
   height: 149px;
   background: url(https://s3.amazonaws.com/github/ribbons/forkme_right_green_007200.png)
 }
+
+#footer {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  font-size: small;
+}
+
+// small { font-size: 10px; }
+
+#footer .muted a { color: gray }
