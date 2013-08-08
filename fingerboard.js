@@ -549,16 +549,18 @@
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         _ref1 = _ref[_i], pitch = _ref1.pitch, circle = _ref1.circle, label = _ref1.label;
         pitch = (pitch + Instruments[State.instrument_name][0] + 12) % 12;
-        fill = 'white';
-        if (__indexOf.call(scale_pitches, pitch) >= 0) {
-          fill = 'green';
-        }
-        if (__indexOf.call(scale_pitches, pitch) >= 0 && pitch === 7) {
-          fill = 'blue';
-        }
-        if (scale_pitches.indexOf(pitch) === 0) {
-          fill = 'red';
-        }
+        fill = (function() {
+          switch (false) {
+            case scale_pitches.indexOf(pitch) !== 0:
+              return 'red';
+            case !(__indexOf.call(scale_pitches, pitch) >= 0 && pitch === 7):
+              return 'blue';
+            case __indexOf.call(scale_pitches, pitch) < 0:
+              return 'green';
+            default:
+              return null;
+          }
+        })();
         circle.attr({
           fill: fill
         });
@@ -567,8 +569,8 @@
         });
       }
       pos = $('#fingerboard').offset();
-      pos.left += 5;
-      pos.top += 4;
+      pos.left += 1;
+      pos.top += 2;
       style = FingerboardStyle;
       pos.left -= style.string_width * ((scale_pitches_0[0] * 5) % 12);
       $('#scale-notes').addClass('animate');
