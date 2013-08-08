@@ -321,15 +321,16 @@ class NoteGridView
     scale_pitches = Scales[State.scale_class_name]
     for {pitch, circle, label} in @views
       pitch = (pitch + Instruments[State.instrument_name][0] + 12) % 12
-      fill = 'white'
-      fill = 'green' if pitch in scale_pitches
-      fill = 'blue' if pitch in scale_pitches and pitch == 7
-      fill = 'red' if scale_pitches.indexOf(pitch) == 0
+      fill = switch
+        when scale_pitches.indexOf(pitch) == 0 then 'red'
+        when pitch in scale_pitches and pitch == 7 then 'blue'
+        when pitch in scale_pitches then 'green'
+        else null
       circle.attr fill: fill
       label.attr text: ScaleDegreeNames[pitch]
     pos = $('#fingerboard').offset()
-    pos.left += 5
-    pos.top += 4
+    pos.left += 1
+    pos.top += 2
     style = FingerboardStyle
     pos.left -= style.string_width * ((scale_pitches_0[0] * 5) % 12)
     $('#scale-notes').addClass('animate')
