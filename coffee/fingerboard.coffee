@@ -23,14 +23,20 @@ do ->
     pitches = scale[name]
     Scales[name] = pitches
 
+pitch_name_to_number = (pitch_name) ->
+  pitch = FlatNoteNames.indexOf(pitch_name)
+  pitch = SharpNoteNames.indexOf(pitch_name) unless pitch >= 0
+  return pitch
+
 Instruments =
   Violin: [7,14,21,28]
   Viola: [0,7,14,21]
   Cello: [0,7,14,21]
 
 State =
-  instrument_name: 'Cello'
-  scale_root: 'C'
+  instrument_name: 'Violin'
+  scale_root_name: 'C'
+  scale_root_pitch: 0
   scale_class_name: 'Diatonic Major'
 
 StringCount = 4
@@ -39,8 +45,14 @@ FingerPositions = 7
 FingerboardStyle =
   string_width: 50
   fret_height: 50
+  nut:
+    'stroke-width': 4
+    stroke: 'rgb(64, 64, 64)'
+  string:
+    'stroke-width': 2
+    stroke: 'silver'
 
-ScaleRootColor = 'rgb(255,96,96)'
+ScaleRootColor = 'rgb(255, 96, 96)'
 
 FingerboardNoteStyle =
   all:
@@ -135,7 +147,8 @@ class KeyboardView
         .mouseover(-> hover.animate 'fill-opacity': 0.4, 100)
         .mouseout(-> hover.animate 'fill-opacity': 0, 100)
         .click ->
-          State.scale_root = pitch
+          State.scale_root_name = FlatNoteNames[pitch]
+          State.scale_root_pitch = pitch
           fingerboardView.update()
       black_keys.push note_view if is_black_key
       @key_views[pitch] = {key, style}
@@ -213,19 +226,21 @@ class FingerboardView
     @create_fingerboard_notes()
 
   draw_fingerboard: ->
+    style = FingerboardStyle
     paper = @get_paper()
     for string_number in [0...StringCount]
-      x = (string_number + 0.5) * FingerboardStyle.string_width
+      x = (string_number + 0.5) * style.string_width
       # draw the string
-      path = ['M', x, FingerboardStyle.fret_height * 0.5, 'L', x, (1 + FingerPositions) * FingerboardStyle.fret_height]
-      paper.path(path.join())
+      string_path = "M#{x},#{style.fret_height * 0.5}L#{x},#{(1 + FingerPositions) * style.fret_height}"
+      paper.path(string_path).attr style.string
     # draw the nut
     do ->
-      y = FingerboardStyle.fret_height - 5
-      paper.path(['M', 0, y, 'L', StringCount * FingerboardStyle.string_width, y].join())
-        .attr 'stroke-width': 4, stroke: 'gray'
+      y = style.fret_height - 5
+      paper.path("M0,#{y}L#{StringCount * style.string_width},#{y}").attr style.nut
 
   create_fingerboard_notes: ->
+    style = FingerboardStyle
+    note_style = FingerboardNoteStyle
     paper = @get_paper()
     @note_views = notes = []
     @note_sets =
@@ -233,11 +248,11 @@ class FingerboardView
       fingerings: paper.set()
       scale_degrees: paper.set()
     for string_number in [0...StringCount]
-      x = (string_number + 0.5) * FingerboardStyle.string_width
+      x = (string_number + 0.5) * style.string_width
       for fret_number in [0..FingerPositions]
-        y = fret_number * FingerboardStyle.fret_height + FingerboardNoteStyle.all.radius + 1
+        y = fret_number * style.fret_height + note_style.all.radius + 1
         pitch = pitch_at(string_number, fret_number)
-        circle = paper.circle(x, y, FingerboardNoteStyle.all.radius).attr(FingerboardNoteStyle.all)
+        circle = paper.circle(x, y, note_style.all.radius).attr(note_style.all)
         note_label = paper.text x, y, pitch_name(pitch)
         fingering_label = paper.text x, y, String(Math.ceil(fret_number / 2))
         scale_degree_label = paper.text x, y, ScaleDegreeNames[pitch]
@@ -256,7 +271,8 @@ class FingerboardView
 
   get_paper: ->
     style = FingerboardStyle
-    @paper or= Raphael('fingerboard', StringCount * style.string_width, FingerPositions * style.fret_height)
+    @paper or= do (style = FingerboardStyle) ->
+      Raphael('fingerboard', StringCount * style.string_width, FingerPositions * style.fret_height)
 
   update: ->
     for k, v of @note_sets
@@ -264,16 +280,13 @@ class FingerboardView
         v.show()
       else
         v.hide()
-    scale_root = State.scale_root
-    scale_root_name = scale_root
-    if typeof(scale_root) == 'string'
-      scale_root = FlatNoteNames.indexOf(scale_root_name)
-      scale_root = SharpNoteNames.indexOf(scale_root_name) unless scale_root >= 0
-    scale_root_name = FlatNoteNames[scale_root] unless typeof(scale_root_name) == 'string'
+    scale_root_name = State.scale_root_name
+    scale_root = State.scale_root_pitch
     keyboardView.update_keyboard scale_root
     scale = Scales[State.scale_class_name]
     scale_pitches = ((n + scale_root) % 12 for n in scale)
-    noteGridView.update_background_scale scale_pitches
+    noteGridView.update_background_scale()
+    noteStyle = FingerboardNoteStyle
     for view in @note_views
       {pitch, circle} = view
       note_type = {0: 'root', '-1': 'chromatic'}[scale_pitches.indexOf(pitch)] or 'scale'
@@ -282,12 +295,13 @@ class FingerboardView
       pitch_name_options = {sharp: true}
       pitch_name_options = {flat: true} if scale_root_name.match(/b/)
       pitch_name_options = {flat: true, sharp: true} if note_type == 'chromatic'
-      attrs = _.extend({}, FingerboardNoteStyle.all, FingerboardNoteStyle[note_type])
+      attrs = _.extend({}, noteStyle.all, noteStyle[note_type])
+      attrs.label = _.extend({}, noteStyle.all.label, noteStyle[note_type].label)
       circle.animate attrs, 400
       view.note_label.attr text: pitch_name(pitch, pitch_name_options)
       view.scale_degree_label.attr text: ScaleDegreeNames[scale_degree]
       label = view[@note_display.replace(/s$/, '_label')]
-      label.animate _.extend({}, FingerboardNoteStyle.all.label, FingerboardNoteStyle[note_type].label), 400
+      label.animate attrs.label, 400
 
   update_instrument: ->
     string_pitches = Instruments[State.instrument_name]
@@ -317,22 +331,30 @@ class NoteGridView
         label = paper.text(x, y, ScaleDegreeNames[pitch]).attr fill: 'white', 'font-size': 16
         @views.push {pitch, circle, label}
 
-  update_background_scale: (scale_pitches_0) ->
+  update_note_colors: ->
+    scale_class_name = State.scale_class_name
+    return if @scale_class_name == scale_class_name
+    @scale_class_name = scale_class_name
     scale_pitches = Scales[State.scale_class_name]
     for {pitch, circle, label} in @views
-      pitch = (pitch + Instruments[State.instrument_name][0] + 12) % 12
       fill = switch
         when scale_pitches.indexOf(pitch) == 0 then 'red'
         when pitch in scale_pitches and pitch == 7 then 'blue'
         when pitch in scale_pitches then 'green'
         else null
       circle.attr fill: fill
-      label.attr text: ScaleDegreeNames[pitch]
+
+  update_background_scale: () ->
+    @update_note_colors()
+    scale_pitches = Scales[State.scale_class_name]
+    scale_root = State.scale_root_pitch
+    bass_pitch = Instruments[State.instrument_name][0]
+    scale_pitches = ((n + scale_root - bass_pitch + 12) % 12 for n in scale_pitches)
     pos = $('#fingerboard').offset()
     pos.left += 1
     pos.top += 2
     style = FingerboardStyle
-    pos.left -= style.string_width * ((scale_pitches_0[0] * 5) % 12)
+    pos.left -= style.string_width * ((scale_pitches[0] * 5) % 12)
     $('#scale-notes').addClass('animate')
     $('#scale-notes').css(left: pos.left, top: pos.top)
 
@@ -343,12 +365,14 @@ keyboardView = new KeyboardView
 
 fingerboardView.update()
 scaleSelectorView.update()
+noteGridView.update_background_scale()
 
 $('#instruments .btn').click ->
   $('#instruments .btn').removeClass('btn-default')
   $(@).addClass('btn-default')
   State.instrument_name = $(@).text()
   fingerboardView.update_instrument()
+  noteGridView.update_background_scale()
 
 $('#fingerings .btn').click ->
   $('#fingerings .btn').removeClass('btn-default')
