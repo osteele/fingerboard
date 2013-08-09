@@ -1,5 +1,5 @@
 (function() {
-  var FingerPositions, FingerboardNoteStyle, FingerboardStyle, FingerboardView, FlatNoteNames, Instruments, KeyboardStyle, KeyboardView, NoteGridView, ScaleDegreeNames, ScaleNames, ScaleRootColor, ScaleSelectorView, ScaleStyle, Scales, SharpNoteNames, State, StringCount, fingerboardView, keyboardView, noteGridView, pitch_at, pitch_name, scale, scaleSelectorView,
+  var FingerPositions, FingerboardNoteStyle, FingerboardStyle, FingerboardView, FlatNoteNames, Instruments, KeyboardStyle, KeyboardView, NoteGridView, ScaleDegreeNames, ScaleNames, ScaleRootColor, ScaleSelectorView, ScaleStyle, Scales, SharpNoteNames, State, StringCount, fingerboardView, keyboardView, noteGridView, pitch_at, pitch_name, pitch_name_to_number, scale, scaleSelectorView,
     __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   SharpNoteNames = 'C C# D D# E F F# G G# A A# B'.split(/\s/);
@@ -54,6 +54,15 @@
     return _results;
   })();
 
+  pitch_name_to_number = function(pitch_name) {
+    var pitch;
+    pitch = FlatNoteNames.indexOf(pitch_name);
+    if (!(pitch >= 0)) {
+      pitch = SharpNoteNames.indexOf(pitch_name);
+    }
+    return pitch;
+  };
+
   Instruments = {
     Violin: [7, 14, 21, 28],
     Viola: [0, 7, 14, 21],
@@ -61,8 +70,9 @@
   };
 
   State = {
-    instrument_name: 'Cello',
-    scale_root: 'C',
+    instrument_name: 'Violin',
+    scale_root_name: 'C',
+    scale_root_pitch: 0,
     scale_class_name: 'Diatonic Major'
   };
 
@@ -72,10 +82,18 @@
 
   FingerboardStyle = {
     string_width: 50,
-    fret_height: 50
+    fret_height: 50,
+    nut: {
+      'stroke-width': 4,
+      stroke: 'rgb(64, 64, 64)'
+    },
+    string: {
+      'stroke-width': 2,
+      stroke: 'silver'
+    }
   };
 
-  ScaleRootColor = 'rgb(255,96,96)';
+  ScaleRootColor = 'rgb(255, 96, 96)';
 
   FingerboardNoteStyle = {
     all: {
@@ -221,7 +239,8 @@
             'fill-opacity': 0
           }, 100);
         }).click(function() {
-          State.scale_root = pitch;
+          State.scale_root_name = FlatNoteNames[pitch];
+          State.scale_root_pitch = pitch;
           return fingerboardView.update();
         });
         if (is_black_key) {
@@ -351,25 +370,25 @@
     }
 
     FingerboardView.prototype.draw_fingerboard = function() {
-      var paper, path, string_number, x, _i;
+      var paper, string_number, string_path, style, x, _i;
+      style = FingerboardStyle;
       paper = this.get_paper();
       for (string_number = _i = 0; 0 <= StringCount ? _i < StringCount : _i > StringCount; string_number = 0 <= StringCount ? ++_i : --_i) {
-        x = (string_number + 0.5) * FingerboardStyle.string_width;
-        path = ['M', x, FingerboardStyle.fret_height * 0.5, 'L', x, (1 + FingerPositions) * FingerboardStyle.fret_height];
-        paper.path(path.join());
+        x = (string_number + 0.5) * style.string_width;
+        string_path = "M" + x + "," + (style.fret_height * 0.5) + "L" + x + "," + ((1 + FingerPositions) * style.fret_height);
+        paper.path(string_path).attr(style.string);
       }
       return (function() {
         var y;
-        y = FingerboardStyle.fret_height - 5;
-        return paper.path(['M', 0, y, 'L', StringCount * FingerboardStyle.string_width, y].join()).attr({
-          'stroke-width': 4,
-          stroke: 'gray'
-        });
+        y = style.fret_height - 5;
+        return paper.path("M0," + y + "L" + (StringCount * style.string_width) + "," + y).attr(style.nut);
       })();
     };
 
     FingerboardView.prototype.create_fingerboard_notes = function() {
-      var circle, fingering_label, fret_number, note_label, notes, paper, pitch, scale_degree_label, string_number, x, y, _i, _results;
+      var circle, fingering_label, fret_number, note_label, note_style, notes, paper, pitch, scale_degree_label, string_number, style, x, y, _i, _results;
+      style = FingerboardStyle;
+      note_style = FingerboardNoteStyle;
       paper = this.get_paper();
       this.note_views = notes = [];
       this.note_sets = {
@@ -379,14 +398,14 @@
       };
       _results = [];
       for (string_number = _i = 0; 0 <= StringCount ? _i < StringCount : _i > StringCount; string_number = 0 <= StringCount ? ++_i : --_i) {
-        x = (string_number + 0.5) * FingerboardStyle.string_width;
+        x = (string_number + 0.5) * style.string_width;
         _results.push((function() {
           var _j, _results1;
           _results1 = [];
           for (fret_number = _j = 0; 0 <= FingerPositions ? _j <= FingerPositions : _j >= FingerPositions; fret_number = 0 <= FingerPositions ? ++_j : --_j) {
-            y = fret_number * FingerboardStyle.fret_height + FingerboardNoteStyle.all.radius + 1;
+            y = fret_number * style.fret_height + note_style.all.radius + 1;
             pitch = pitch_at(string_number, fret_number);
-            circle = paper.circle(x, y, FingerboardNoteStyle.all.radius).attr(FingerboardNoteStyle.all);
+            circle = paper.circle(x, y, note_style.all.radius).attr(note_style.all);
             note_label = paper.text(x, y, pitch_name(pitch));
             fingering_label = paper.text(x, y, String(Math.ceil(fret_number / 2)));
             scale_degree_label = paper.text(x, y, ScaleDegreeNames[pitch]);
@@ -412,11 +431,13 @@
     FingerboardView.prototype.get_paper = function() {
       var style;
       style = FingerboardStyle;
-      return this.paper || (this.paper = Raphael('fingerboard', StringCount * style.string_width, FingerPositions * style.fret_height));
+      return this.paper || (this.paper = (function(style) {
+        return Raphael('fingerboard', StringCount * style.string_width, FingerPositions * style.fret_height);
+      })(FingerboardStyle));
     };
 
     FingerboardView.prototype.update = function() {
-      var attrs, circle, k, label, n, note_type, pitch, pitch_name_options, scale_degree, scale_pitches, scale_root, scale_root_name, v, view, _i, _len, _ref, _ref1, _results;
+      var attrs, circle, k, label, n, noteStyle, note_type, pitch, pitch_name_options, scale_degree, scale_pitches, scale_root, scale_root_name, v, view, _i, _len, _ref, _ref1, _results;
       _ref = this.note_sets;
       for (k in _ref) {
         v = _ref[k];
@@ -426,17 +447,8 @@
           v.hide();
         }
       }
-      scale_root = State.scale_root;
-      scale_root_name = scale_root;
-      if (typeof scale_root === 'string') {
-        scale_root = FlatNoteNames.indexOf(scale_root_name);
-        if (!(scale_root >= 0)) {
-          scale_root = SharpNoteNames.indexOf(scale_root_name);
-        }
-      }
-      if (typeof scale_root_name !== 'string') {
-        scale_root_name = FlatNoteNames[scale_root];
-      }
+      scale_root_name = State.scale_root_name;
+      scale_root = State.scale_root_pitch;
       keyboardView.update_keyboard(scale_root);
       scale = Scales[State.scale_class_name];
       scale_pitches = (function() {
@@ -448,7 +460,8 @@
         }
         return _results;
       })();
-      noteGridView.update_background_scale(scale_pitches);
+      noteGridView.update_background_scale();
+      noteStyle = FingerboardNoteStyle;
       _ref1 = this.note_views;
       _results = [];
       for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
@@ -476,7 +489,8 @@
             sharp: true
           };
         }
-        attrs = _.extend({}, FingerboardNoteStyle.all, FingerboardNoteStyle[note_type]);
+        attrs = _.extend({}, noteStyle.all, noteStyle[note_type]);
+        attrs.label = _.extend({}, noteStyle.all.label, noteStyle[note_type].label);
         circle.animate(attrs, 400);
         view.note_label.attr({
           text: pitch_name(pitch, pitch_name_options)
@@ -485,7 +499,7 @@
           text: ScaleDegreeNames[scale_degree]
         });
         label = view[this.note_display.replace(/s$/, '_label')];
-        _results.push(label.animate(_.extend({}, FingerboardNoteStyle.all.label, FingerboardNoteStyle[note_type].label), 400));
+        _results.push(label.animate(attrs.label, 400));
       }
       return _results;
     };
@@ -542,13 +556,18 @@
       }
     }
 
-    NoteGridView.prototype.update_background_scale = function(scale_pitches_0) {
-      var circle, fill, label, pitch, pos, scale_pitches, style, _i, _len, _ref, _ref1;
+    NoteGridView.prototype.update_note_colors = function() {
+      var circle, fill, label, pitch, scale_class_name, scale_pitches, _i, _len, _ref, _ref1, _results;
+      scale_class_name = State.scale_class_name;
+      if (this.scale_class_name === scale_class_name) {
+        return;
+      }
+      this.scale_class_name = scale_class_name;
       scale_pitches = Scales[State.scale_class_name];
       _ref = this.views;
+      _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         _ref1 = _ref[_i], pitch = _ref1.pitch, circle = _ref1.circle, label = _ref1.label;
-        pitch = (pitch + Instruments[State.instrument_name][0] + 12) % 12;
         fill = (function() {
           switch (false) {
             case scale_pitches.indexOf(pitch) !== 0:
@@ -561,18 +580,33 @@
               return null;
           }
         })();
-        circle.attr({
+        _results.push(circle.attr({
           fill: fill
-        });
-        label.attr({
-          text: ScaleDegreeNames[pitch]
-        });
+        }));
       }
+      return _results;
+    };
+
+    NoteGridView.prototype.update_background_scale = function() {
+      var bass_pitch, n, pos, scale_pitches, scale_root, style;
+      this.update_note_colors();
+      scale_pitches = Scales[State.scale_class_name];
+      scale_root = State.scale_root_pitch;
+      bass_pitch = Instruments[State.instrument_name][0];
+      scale_pitches = (function() {
+        var _i, _len, _results;
+        _results = [];
+        for (_i = 0, _len = scale_pitches.length; _i < _len; _i++) {
+          n = scale_pitches[_i];
+          _results.push((n + scale_root - bass_pitch + 12) % 12);
+        }
+        return _results;
+      })();
       pos = $('#fingerboard').offset();
       pos.left += 1;
       pos.top += 2;
       style = FingerboardStyle;
-      pos.left -= style.string_width * ((scale_pitches_0[0] * 5) % 12);
+      pos.left -= style.string_width * ((scale_pitches[0] * 5) % 12);
       $('#scale-notes').addClass('animate');
       return $('#scale-notes').css({
         left: pos.left,
@@ -596,11 +630,14 @@
 
   scaleSelectorView.update();
 
+  noteGridView.update_background_scale();
+
   $('#instruments .btn').click(function() {
     $('#instruments .btn').removeClass('btn-default');
     $(this).addClass('btn-default');
     State.instrument_name = $(this).text();
-    return fingerboardView.update_instrument();
+    fingerboardView.update_instrument();
+    return noteGridView.update_background_scale();
   });
 
   $('#fingerings .btn').click(function() {
