@@ -70,6 +70,34 @@ h1 {
   font-size: small;
 }
 
-// small { font-size: 10px; }
-
 #footer .muted a { color: gray }
+
+svg .piano-key rect {
+  fill: white;
+  stroke: black;
+}
+
+svg .piano-key.black-key rect {
+  fill: black;
+}
+
+svg .piano-key.root rect {
+  fill: rgb(255, 96, 96) !important;
+}
+
+svg .piano-key:hover rect {
+  fill: gray;
+  transition: fill 0.2s;
+  -webkit-transition: fill 0.2s;
+}
+
+svg .piano-key text {
+  font-size: 20px;
+  text-anchor: middle;
+  cursor: pointer;
+}
+
+svg .piano-key.black-key text {
+  font-size: 12px;
+  fill: white;
+}

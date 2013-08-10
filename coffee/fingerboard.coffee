@@ -77,24 +77,13 @@ FingerboardNoteStyle =
     label: {fill: 'gray', 'font-size': 15}
 
 KeyboardStyle =
-  root:
-    fill: ScaleRootColor
   Key:
     width: 25
     margin: 3
   WhiteKey:
     height: 120
-    key:
-      fill: 'white'
-    label:
-      'font-size': 20
   BlackKey:
     height: 90
-    key:
-      fill: 'black'
-    label:
-      'font-size': 12
-      fill: 'white'
 
 ScaleStyle =
   cols: 4
@@ -125,44 +114,53 @@ pitch_name = (pitch, options={}) ->
 
 class KeyboardView
   constructor: ->
-    paper = @get_paper()
+    style = KeyboardStyle
+    root = d3.select('#keyboard').append('svg')
+      .attr('width', 7 * (style.Key.width + style.Key.margin))
+      .attr('height', style.WhiteKey.height + 1)
+
     next_x = 1
-    black_keys = paper.set()
-    @key_views = {}
-    [0...12].forEach (pitch) =>
+    @keys = [0...12].map (pitch) ->
+      note_name = pitch_name(pitch, flat: true)
       is_black_key = FlatNoteNames[pitch].length > 1
-      style = _.extend {}, KeyboardStyle.Key, (if is_black_key then KeyboardStyle.BlackKey else KeyboardStyle.WhiteKey)
-      {width, height} = style
+      {width, height} = key_style =
+        _.extend {}, KeyboardStyle.Key, (if is_black_key then KeyboardStyle.BlackKey else KeyboardStyle.WhiteKey)
       x = next_x
       next_x += width + KeyboardStyle.Key.margin unless is_black_key
       x -= width / 2 if is_black_key
-      note_name = pitch_name(pitch, flat: true)
+      return {pitch, name: note_name, is_black_key, attrs: {width, height, x, y: 0}}
+    @keys.sort (a, b) -> a.is_black_key - b.is_black_key
 
-      paper.setStart()
-      key = paper.rect(x, 0, width, height, 2).attr(style.key)#.glow()
-      label = paper.text(x + width / 2, height - 10, note_name).attr style.label
-      hover = paper.rect(x, 0, width, height).attr fill: (if is_black_key then 'white' else 'black'), 'fill-opacity': 0
-      note_view = paper.setFinish()
-        .attr(cursor: 'pointer')
-        .mouseover(-> hover.animate 'fill-opacity': 0.4, 100)
-        .mouseout(-> hover.animate 'fill-opacity': 0, 100)
-        .click ->
-          State.scale_root_name = FlatNoteNames[pitch]
-          State.scale_root_pitch = pitch
-          fingerboardView.update()
-      black_keys.push note_view if is_black_key
-      @key_views[pitch] = {key, style}
-    black_keys.toFront()
+    onclick = ({pitch, name}) ->
+      State.scale_root_name = FlatNoteNames[pitch]
+      State.scale_root_pitch = pitch
+      fingerboardView.update()
 
-  get_paper: ->
-    style = KeyboardStyle
-    @paper or= Raphael('keyboard', 7 * (style.Key.width + style.Key.margin), style.WhiteKey.height + 1)
+    @d3_keys = root.selectAll('.piano-key')
+      .data(@keys).enter()
+    .append('g')
+      .classed('piano-key', true)
+      .classed('black-key', ({is_black_key}) -> is_black_key)
+      .on('click', onclick)
+
+    @d3_keys.append('rect')
+      .attr(
+        x: ({attrs}) -> attrs.x
+        y: ({attrs}) -> attrs.y
+        width: ({attrs}) -> attrs.width
+        height: ({attrs}) -> attrs.height
+      )
+
+    @d3_keys.append('text')
+      .attr(
+        x: ({attrs}) -> attrs.x + attrs.width / 2
+        y: ({attrs}) -> attrs.y + attrs.height - 6
+      )
+      .text(({name}) -> name)
 
   update_keyboard: (root_pitch) ->
-    for pitch in [0...12]
-      note_view = @key_views[pitch]
-      fill_color = (if pitch == root_pitch then KeyboardStyle.root.fill else note_view.style.key.fill)
-      note_view.key.animate fill: fill_color, 100
+    @d3_keys.each ({pitch}) ->
+      d3.select(this).classed('root', pitch == State.scale_root_pitch)
 
 
 class ScaleSelectorView
