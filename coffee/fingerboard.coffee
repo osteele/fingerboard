@@ -45,12 +45,6 @@ FingerPositions = 7
 FingerboardStyle =
   string_width: 50
   fret_height: 50
-  nut:
-    'stroke-width': 4
-    stroke: 'rgb(64, 64, 64)'
-  string:
-    'stroke-width': 2
-    stroke: 'silver'
 
 ScaleRootColor = 'rgb(255, 96, 96)'
 
@@ -221,85 +215,98 @@ class FingerboardView
   constructor: ->
     @note_display = 'notes'
     @draw_fingerboard()
-    @create_fingerboard_notes()
 
   draw_fingerboard: ->
     style = FingerboardStyle
-    paper = @get_paper()
-    for string_number in [0...StringCount]
-      x = (string_number + 0.5) * style.string_width
-      # draw the string
-      string_path = "M#{x},#{style.fret_height * 0.5}L#{x},#{(1 + FingerPositions) * style.fret_height}"
-      paper.path(string_path).attr style.string
-    # draw the nut
-    do ->
-      y = style.fret_height - 5
-      paper.path("M0,#{y}L#{StringCount * style.string_width},#{y}").attr style.nut
 
-  create_fingerboard_notes: ->
-    style = FingerboardStyle
+    root = d3.select('#fingerboard').append('svg')
+      .attr('width', StringCount * style.string_width)
+      .attr('height', FingerPositions * style.fret_height)
+
+    nut_y = style.fret_height - 5
+    root.append('line')
+      .classed('nut', true)
+      .attr(x1: 0, y1: nut_y, x2: StringCount * style.string_width, y2: nut_y)
+
+    root.selectAll('.string')
+      .data([0...StringCount]).enter()
+    .append('line')
+      .classed('string', true)
+      .attr(
+        x1: (d) -> (d + 0.5) * style.string_width
+        y1: style.fret_height * 0.5
+        x2: (d) -> (d + 0.5) * style.string_width
+        y2: (1 + FingerPositions) * style.fret_height
+      )
+
     note_style = FingerboardNoteStyle
-    paper = @get_paper()
-    @note_views = notes = []
-    @note_sets =
-      notes: paper.set()
-      fingerings: paper.set()
-      scale_degrees: paper.set()
+    finger_positions = []
     for string_number in [0...StringCount]
-      x = (string_number + 0.5) * style.string_width
       for fret_number in [0..FingerPositions]
-        y = fret_number * style.fret_height + note_style.all.radius + 1
         pitch = pitch_at(string_number, fret_number)
-        circle = paper.circle(x, y, note_style.all.radius).attr(note_style.all)
-        note_label = paper.text x, y, pitch_name(pitch)
-        fingering_label = paper.text x, y, String(Math.ceil(fret_number / 2))
-        scale_degree_label = paper.text x, y, ScaleDegreeNames[pitch]
-        @note_sets.notes.push note_label
-        @note_sets.fingerings.push fingering_label
-        @note_sets.scale_degrees.push scale_degree_label
-        notes.push {
+        note_name = pitch_name(pitch)
+        fingering_name = String(Math.ceil(fret_number / 2))
+        scale_degree_name = ScaleDegreeNames[pitch]
+        finger_positions.push {
           string_number
           fret_number
           pitch
-          circle
-          note_label
-          fingering_label
-          scale_degree_label
+          note_name
+          fingering_name
+          scale_degree_name
         }
 
-  get_paper: ->
-    style = FingerboardStyle
-    @paper or= do (style = FingerboardStyle) ->
-      Raphael('fingerboard', StringCount * style.string_width, FingerPositions * style.fret_height)
+    @d3_notes = root.selectAll('.finger-position')
+      .data(finger_positions).enter()
+    .append('g')
+      .classed('finger-position', true)
+      .attr('transform', ({string_number, fret_number}) ->
+        dx = (string_number + 0.5) * style.string_width
+        dy = fret_number * style.fret_height + note_style.all.radius + 1
+        "translate(#{dx}, #{dy})"
+      )
+
+    @d3_notes.append('circle')
+      .attr(r: 20)
+
+    @d3_notes.append('text')
+      .classed('note', true)
+      .attr(y: 7)
+      .text(({note_name}) -> note_name)
+    @d3_notes.append('text')
+      .classed('fingering', true)
+      .attr(y: 7)
+      .text(({fingering_name}) -> fingering_name)
+    @d3_notes.append('text')
+      .classed('scale-degree', true)
+      .attr(y: 7)
+      .text(({scale_degree_name}) -> scale_degree_name)
 
   update: ->
-    for k, v of @note_sets
-      if k == @note_display
-        v.show()
-      else
-        v.hide()
     scale_root_name = State.scale_root_name
     scale_root = State.scale_root_pitch
     keyboardView.update_keyboard scale_root
     scale = Scales[State.scale_class_name]
     scale_pitches = ((n + scale_root) % 12 for n in scale)
-    noteGridView.update_background_scale()
-    noteStyle = FingerboardNoteStyle
-    for view in @note_views
-      {pitch, circle} = view
-      note_type = {0: 'root', '-1': 'chromatic'}[scale_pitches.indexOf(pitch)] or 'scale'
+
+    for k in ['notes', 'fingerings', 'scale_degrees']
+      visible = k == @note_display
+      labels = d3.select('#fingerboard').selectAll('.' + k.replace(/s$/, '').replace(/_/g, '-'))
+      labels.attr('visibility', if visible then 'inherit' else 'hidden')
+
+    pitch_name_options = {sharp: true}
+    pitch_name_options = {flat: true} if scale_root_name.match(/b/)
+
+    @d3_notes.each ({pitch, circle}) ->
       scale_degree = (pitch - scale_pitches[0] + 12) % 12
-      note_type = 'fifth' if pitch in scale_pitches and scale_degree == 7
-      pitch_name_options = {sharp: true}
-      pitch_name_options = {flat: true} if scale_root_name.match(/b/)
-      pitch_name_options = {flat: true, sharp: true} if note_type == 'chromatic'
-      attrs = _.extend({}, noteStyle.all, noteStyle[note_type])
-      attrs.label = _.extend({}, noteStyle.all.label, noteStyle[note_type].label)
-      circle.animate attrs, 400
-      view.note_label.attr text: pitch_name(pitch, pitch_name_options)
-      view.scale_degree_label.attr text: ScaleDegreeNames[scale_degree]
-      label = view[@note_display.replace(/s$/, '_label')]
-      label.animate attrs.label, 400
+      d3.select(this)
+        .classed('scale', pitch in scale_pitches)
+        .classed('chromatic', pitch not in scale_pitches)
+        .classed('root', scale_degree == 0)
+        .classed('fifth', scale_degree == 7)
+        .select('text')
+          .text(({pitch}) -> pitch_name(pitch, pitch_name_options))
+
 
   update_instrument: ->
     string_pitches = Instruments[State.instrument_name]

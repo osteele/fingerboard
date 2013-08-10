@@ -72,32 +72,89 @@ h1 {
 
 #footer .muted a { color: gray }
 
-svg .piano-key rect {
+svg text {
+  cursor: pointer;
+}
+
+#fingerboard .nut {
+  stroke-width: 4;
+  stroke: rgb(64, 64, 64);
+}
+
+#fingerboard .string {
+  stroke-width: 2;
+  stroke: silver;
+}
+
+#fingerboard .finger-position {
+  circle {
+    stroke: blue;
+    fill: none;
+    // transition: fill 0.4s, stroke 0.4s;
+    // -webkit-transition: fill 0.4s, stroke 0.4s;
+  }
+
+  text {
+    fill: black;
+    font-size: 20px;
+    text-anchor: middle;
+    // letter-spacing: -4px;
+  }
+
+  &.scale {
+    circle { fill: lightGreen; }
+
+    &.root {
+      circle { fill: rgb(255, 96, 96); }
+      text { font-weight: bold; }
+    }
+
+    &.fifth {
+      circle { fill: rgb(192, 192, 255); }
+    }
+  }
+
+  &.chromatic {
+    circle {
+      stroke: white;
+      fill: white;
+      fill-opacity: 0;
+      stroke-opacity: 0;
+    }
+
+    text {
+      fill: gray;
+      font-size: 15px;
+    }
+  }
+}
+
+#keyboard .piano-key rect {
   fill: white;
   stroke: black;
 }
 
-svg .piano-key.black-key rect {
+#keyboard .piano-key.black-key rect {
   fill: black;
 }
 
-svg .piano-key.root rect {
+#keyboard .piano-key.root rect {
   fill: rgb(255, 96, 96) !important;
 }
 
-svg .piano-key:hover rect {
+#keyboard .piano-key:hover rect {
   fill: gray;
   transition: fill 0.2s;
   -webkit-transition: fill 0.2s;
 }
 
-svg .piano-key text {
+#keyboard .piano-key text {
   font-size: 20px;
   text-anchor: middle;
-  cursor: pointer;
+  letter-spacing: -1px;
 }
 
-svg .piano-key.black-key text {
+#keyboard .piano-key.black-key text {
   font-size: 12px;
   fill: white;
 }
