@@ -3,6 +3,7 @@ html(lang="en")
   head
     title Fingerboard Scales
     meta(http-equiv="content-type", content="text/html; charset=UTF-8")
+    link(rel="icon", type="image/png", href="fretboard-icon.png")
     link(href="#{cdn_scheme}//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css", rel="stylesheet", type="text/css")
     link(href="./main.css", rel="stylesheet", type="text/css")
     link(href="http://fonts.googleapis.com/css?family=Abel|Open+Sans:400,600", rel="stylesheet")
@@ -39,12 +40,17 @@ html(lang="en")
 
     #footer
       small.muted.credit
-        a(href="http://www.flickr.com/photos/mitch98000/3320576686/") Background picture
-        = ' by '
-        a(href="http://www.flickr.com/photos/mitch98000/") mitch98000 @flickr
-        = '. Used under '
-        a(href="http://creativecommons.org/licenses/by/2.0/deed.en") Creative Commons - Attribution
-        | .
+        p
+          a(href="http://www.flickr.com/photos/mitch98000/3320576686/") Background picture
+          = ' by '
+          a(href="http://www.flickr.com/photos/mitch98000/") mitch98000 @flickr
+          = '. Used under '
+          a(href="http://creativecommons.org/licenses/by/2.0/deed.en") Creative Commons - Attribution
+          | .
+        p
+          a(href="http://openclipart.org/detail/4802/violin-by-papapishu") Favicon
+          =' by papapishu, in the public domain at '
+          a(href="http://openclipart.org") Openclipart.
 
     script(src="./fingerboard.js")
 
