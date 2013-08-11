@@ -611,4 +611,12 @@
     return fingerboardView.update();
   });
 
+  $('#about-text a').attr('target', '_blank');
+
+  $("#about").popover({
+    content: $('#about-text').html(),
+    html: true,
+    placement: 'bottom'
+  });
+
 }).call(this);
