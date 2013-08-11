@@ -282,6 +282,7 @@
       onclick = function(scale_name) {
         State.scale_class_name = scale_name;
         fingerboardView.update();
+        noteGridView.update();
         return _this.update();
       };
       scales = d3.select('#scales').selectAll('.scale').data(ScaleNames).enter().append('div').classed('scale', true).on('click', onclick);
