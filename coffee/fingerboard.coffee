@@ -129,6 +129,7 @@ class KeyboardView
       State.scale_root_name = FlatNoteNames[pitch]
       State.scale_root_pitch = pitch
       fingerboardView.update()
+      noteGridView.update()
 
     @d3_keys = root.selectAll('.piano-key')
       .data(@keys).enter()
@@ -221,7 +222,6 @@ class FingerboardView
       for fret_number in [0..FingerPositions]
         pitch = pitch_at(string_number, fret_number)
         note_name = pitch_name(pitch).replace(/(.)(.)/, '$1-$2')
-        console.info note_name
         fingering_name = String(Math.ceil(fret_number / 2))
         scale_degree_name = ScaleDegreeNames[pitch]
         finger_positions.push {
@@ -377,6 +377,7 @@ fingerboardView = new FingerboardView
 noteGridView = new NoteGridView
 keyboardView = new KeyboardView
 
+fingerboardView.update_instrument()
 fingerboardView.update()
 scaleSelectorView.update()
 noteGridView.update()

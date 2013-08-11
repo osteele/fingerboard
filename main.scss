@@ -90,8 +90,8 @@ svg text {
   circle {
     stroke: blue;
     fill: none;
-    // transition: fill 0.4s, stroke 0.4s;
-    // -webkit-transition: fill 0.4s, stroke 0.4s;
+    transition: fill-opacity 0.8s, stroke 0.4s, transform 1s;
+    -webkit-transition: fill-opacity 0.8s, stroke 0.4s, -webkit-transform 1s;
   }
 
   text {
@@ -118,8 +118,8 @@ svg text {
 
   &.chromatic {
     circle {
+      // -webkit-transform: scale(0, 0);
       stroke: white;
-      fill: white;
       fill-opacity: 0;
       stroke-opacity: 0;
     }
