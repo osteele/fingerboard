@@ -35,9 +35,11 @@ Instruments =
 
 State =
   instrument_name: 'Violin'
-  scale_root_name: 'C'
-  scale_root_pitch: 0
+  scale_tonic_name: 'C'
+  scale_tonic_pitch: 0
   scale_class_name: 'Diatonic Major'
+
+D3State = d3.dispatch('instrument', 'scale', 'scale_tonic')
 
 StringCount = 4
 FingerPositions = 7
@@ -126,10 +128,9 @@ class KeyboardView
     @keys.sort (a, b) -> a.is_black_key - b.is_black_key
 
     onclick = ({pitch, name}) ->
-      State.scale_root_name = FlatNoteNames[pitch]
-      State.scale_root_pitch = pitch
-      fingerboardView.update()
-      noteGridView.update()
+      State.scale_tonic_name = FlatNoteNames[pitch]
+      State.scale_tonic_pitch = pitch
+      D3State.scale_tonic()
 
     @d3_keys = root.selectAll('.piano-key')
       .data(@keys).enter()
@@ -153,9 +154,12 @@ class KeyboardView
       )
       .text(({name}) -> name)
 
+    D3State.on('scale_tonic.keyboard', => @update())
+    @update()
+
   update: ->
     @d3_keys.each ({pitch}) ->
-      d3.select(this).classed('root', pitch == State.scale_root_pitch)
+      d3.select(this).classed('root', pitch == State.scale_tonic_pitch)
 
 
 class ScaleSelectorView
@@ -164,9 +168,8 @@ class ScaleSelectorView
 
     onclick = (scale_name) =>
       State.scale_class_name = scale_name
-      fingerboardView.update()
-      noteGridView.update()
-      @update()
+      D3State.scale()
+    D3State.on('scale.scale', => @update())
 
     scales = d3.select('#scales').selectAll('.scale')
       .data(ScaleNames).enter()
@@ -205,6 +208,8 @@ class ScaleSelectorView
         .classed('chromatic', (d) -> d.chromatic)
         .classed('root', (d) -> d.pitch == 0)
         .classed('fifth', (d) -> d.pitch == 7)
+
+    @update()
 
   update: ->
     scales = d3.select('#scales').selectAll('.scale')
@@ -286,12 +291,17 @@ class FingerboardView
       .attr(y: 7)
       .text((d) -> d.scale_degree_name)
 
+    D3State.on('instrument.fingerboard', => @update_instrument())
+    D3State.on('scale.fingerboard', => @update())
+    D3State.on('scale_tonic.fingerboard', => @update())
+
+    @update()
+
   update: ->
-    keyboardView.update()
-    scale_root_name = State.scale_root_name
-    scale_root = State.scale_root_pitch
+    scale_tonic_name = State.scale_tonic_name
+    scale_tonic = State.scale_tonic_pitch
     scale = Scales[State.scale_class_name]
-    scale_pitches = ((n + scale_root) % 12 for n in scale)
+    scale_pitches = ((n + scale_tonic) % 12 for n in scale)
 
     for k in @label_sets
       visible = k == @note_display.replace(/_/g, '-')
@@ -299,7 +309,7 @@ class FingerboardView
       labels.attr('visibility', if visible then 'inherit' else 'hidden')
 
     pitch_name_options = {sharp: true}
-    pitch_name_options = {flat: true} if scale_root_name.match(/b/)
+    pitch_name_options = {flat: true} if scale_tonic_name.match(/b/)
 
     @d3_notes.each ({pitch, circle}) ->
       scale_degree = (pitch - scale_pitches[0] + 12) % 12
@@ -342,6 +352,12 @@ class NoteGridView
         label = paper.text(x, y, ScaleDegreeNames[pitch]).attr fill: 'white', 'font-size': 16
         @views.push {pitch, circle, label}
 
+    D3State.on('instrument.note_grid', => @update())
+    D3State.on('scale.note_grid', => @update())
+    D3State.on('scale_tonic.note_grid', => @update())
+
+    @update()
+
   update_note_colors: ->
     scale_class_name = State.scale_class_name
     return if @scale_class_name == scale_class_name
@@ -358,9 +374,9 @@ class NoteGridView
   update: () ->
     @update_note_colors()
     scale_pitches = Scales[State.scale_class_name]
-    scale_root = State.scale_root_pitch
+    scale_tonic = State.scale_tonic_pitch
     bass_pitch = Instruments[State.instrument_name][0]
-    scale_pitches = ((n + scale_root - bass_pitch + 12) % 12 for n in scale_pitches)
+    scale_pitches = ((n + scale_tonic - bass_pitch + 12) % 12 for n in scale_pitches)
     pos = $('#fingerboard').offset()
     # FIXME why the fudge factors?
     pos.left += 1
@@ -375,17 +391,11 @@ fingerboardView = new FingerboardView
 noteGridView = new NoteGridView
 keyboardView = new KeyboardView
 
-fingerboardView.update_instrument()
-fingerboardView.update()
-scaleSelectorView.update()
-noteGridView.update()
-
 $('#instruments .btn').click ->
   $('#instruments .btn').removeClass('btn-default')
   $(@).addClass('btn-default')
   State.instrument_name = $(@).text()
-  fingerboardView.update_instrument()
-  noteGridView.update()
+  D3State.instrument()
 
 $('#fingerings .btn').click ->
   $('#fingerings .btn').removeClass('btn-default')
