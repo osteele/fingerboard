@@ -6,6 +6,7 @@ html(lang="en")
     link(rel="icon", type="image/png", href="fretboard-icon.png")
     link(href="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.0.0-rc1/css/bootstrap.min.css", rel="stylesheet", type="text/css")
     link(href="./main.css", rel="stylesheet", type="text/css")
+    link(href="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/font-awesome/3.2.1/css/font-awesome.min.css", rel="stylesheet")
     link(href="http://fonts.googleapis.com/css?family=Abel|Open+Sans:400,600", rel="stylesheet")
     script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/raphael/2.1.0/raphael-min.js", defer)
     script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js", defer)
@@ -14,7 +15,8 @@ html(lang="en")
     script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js", defer)
     script(src="./fingerboard.js", defer)
   body
-    h1 Fingerboard Scales
+    h1
+      | Fingerboard Scales
 
     .module.panel
       h2.panel-title Fingerboard
@@ -40,19 +42,35 @@ html(lang="en")
 
     a#fork-me(href="https://github.com/osteele/fingerboard")
 
-    #footer
-      small.muted.credit
-        p
-          a(href="http://www.flickr.com/photos/mitch98000/3320576686/") Background picture
-          = ' by '
-          a(href="http://www.flickr.com/photos/mitch98000/") mitch98000 @flickr
-          = '. Used under '
-          a(href="http://creativecommons.org/licenses/by/2.0/deed.en") Creative Commons - Attribution
-          | .
-        p
-          a(href="http://openclipart.org/detail/4802/violin-by-papapishu") Favicon
-          =' by papapishu, in the public domain at '
-          a(href="http://openclipart.org") Openclipart.
+    #about-container
+      i#about(data-original-title="About").icon-info-sign
+
+    #templates
+      #about-text
+        :markdown
+          *Fingerboard Scales* displays the first-position finger position for scales on a
+          violin, viola, or cello in standard tuning.
+
+          [The viola and cello have strings in the same pitches classes, so the fingering is the same.]
+
+          Click or tap a key on the keyboard to select the scale key.
+
+          ---
+
+          Built by [Oliver Steele](http://github.com/osteele) using
+          [Coffeescript](http://coffeescript.org/),
+          [D3](http://d3js.org/),
+          [Grunt](http://gruntjs.com/),
+          [Jade](http://jade-lang.com/),
+          [Sass](http://sass-lang.com/), and
+          [Twitter Bootstrap](http://getbootstrap.com/).
+
+          The [background picture](http://www.flickr.com/photos/mitch98000/3320576686/), by
+          [mitch98000 @flickr](http://www.flickr.com/photos/mitch98000/),
+          is used under [Creative Commons &ndash; Attribution](http://creativecommons.org/licenses/by/2.0/deed.en).
+
+          The favicon image is from a [sketch](http://openclipart.org/detail/4802/violin-by-papapishu)
+          placed in the public domain by papapishu @ [Openclipart](http://openclipart.org).
 
     if debug
       script(src="http://localhost:35729/livereload.js")

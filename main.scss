@@ -31,6 +31,8 @@ h1 {
   background: rgba(255, 255, 255, 0.5);
 }
 
+#templates { display: none; }
+
 $root-color: rgb(255, 96, 96);
 $fifth-color: rgb(192, 192, 255);
 
@@ -66,6 +68,28 @@ $fifth-color: rgb(192, 192, 255);
   background: url(https://s3.amazonaws.com/github/ribbons/forkme_right_green_007200.png)
 }
 
+#about {
+  position: absolute;
+  top: 22px;
+  left: 302px;
+  color: gray;
+  cursor: pointer;
+  @include vendor-prefix(transition, color 0.25s);
+
+  &:hover { color: white; }
+}
+
+#about-container {
+  .popover {
+    max-width: 600px;
+    width: 600px;
+  }
+
+  .popover-content {
+    font-size: small;
+  }
+}
+
 #footer {
   position: absolute;
   bottom: 0;
@@ -73,9 +97,9 @@ $fifth-color: rgb(192, 192, 255);
   font-size: small;
 
   p { margin: 0; }
-}
 
-#footer .muted a { color: gray }
+  .muted a { color: gray }
+}
 
 svg text {
   cursor: default;
