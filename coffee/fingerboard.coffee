@@ -153,7 +153,7 @@ class KeyboardView
       )
       .text(({name}) -> name)
 
-  update_keyboard: (root_pitch) ->
+  update: ->
     @d3_keys.each ({pitch}) ->
       d3.select(this).classed('root', pitch == State.scale_root_pitch)
 
@@ -161,55 +161,54 @@ class KeyboardView
 class ScaleSelectorView
   constructor: ->
     style = ScaleStyle
-    paper = @get_paper()
-    cols = style.cols
-    @views = {}
-    ScaleNames.forEach (name, i) =>
-      pitches = Scales[name]
-      cell_width = style.cell.width
-      cell_height = style.cell.height
-      x = cell_width / 2 + (i % cols) * cell_width
-      y = 6 + Math.floor(i / cols) * cell_height
-      paper.setStart()
-      bg = paper.rect(x - cell_width / 2, y - 5, cell_width - 5, cell_width, 2)
-        .attr stroke: 'gray'
-      hover = paper.rect(x - cell_width / 2, y - 5, cell_width - 5, cell_width, 2)
-        .attr fill: 'gray', 'fill-opacity': 0
-      paper.text x, y, name
-      y += 40
-      for pitch in [0...12]
-        r = style.pitch_circle.radius
-        a = (pitch - 3) * 2 * Math.PI / 12
-        nx = x + Math.cos(a) * r
-        ny = y + Math.sin(a) * r
-        note_circle = paper.circle nx, ny, style.pitch_circle.note.radius
-        if pitch in pitches
-          paper.path ['M',x,',',y,'L',nx,',',ny].join('')
-          note_circle.attr fill: 'gray'
-          note_circle.toFront()
-          note_circle.attr style.pitch_circle.root if pitch == 0
-          note_circle.attr style.pitch_circle.fifth if pitch == 7
-      bg.toBack()
-      hover.toFront()
-      paper.setFinish()
-        .attr(cursor: 'pointer')
-        .mouseover(-> hover.animate 'fill-opacity': 0.4)
-        .mouseout(-> hover.animate 'fill-opacity': 0)
-        .click =>
-          State.scale_class_name = name
-          fingerboardView.update()
-          @update()
-      @views[name] = bg
 
-  get_paper: ->
-    style = ScaleStyle
-    @paper or= Raphael('scales',
-      (style.cell.width + style.cell.padding) * style.cols,
-      Math.ceil(_.keys(Scales).length / style.cols) * (style.cell.height + style.cell.padding))
+    onclick = (scale_name) =>
+      State.scale_class_name = scale_name
+      fingerboardView.update()
+      noteGridView.update()
+      @update()
+
+    scales = d3.select('#scales').selectAll('.scale')
+      .data(ScaleNames).enter()
+    .append('div')
+      .classed('scale', true)
+      .on('click', onclick)
+    scales.append('h2').text((scale_name) -> scale_name)
+    pc_width = 2 * (style.pitch_circle.radius + style.pitch_circle.note.radius + 1)
+    scales.append('svg')
+      .attr(width: pc_width, height: pc_width)
+      .append('g')
+      .attr(
+        transform: "translate(#{pc_width / 2}, #{pc_width / 2})"
+      )
+    scales.selectAll('svg g').each (scale_name) ->
+      pitches = Scales[scale_name]
+      r = style.pitch_circle.radius
+      endpoints = [0...12].map (pitch) ->
+        a = (pitch - 3) * 2 * Math.PI / 12
+        x = Math.cos(a) * r
+        y = Math.sin(a) * r
+        chromatic = pitch not in pitches
+        return {x, y, chromatic, pitch}
+      d3.select(this).selectAll('line').data(endpoints).enter().append('line')
+        .attr(
+          x2: (d) -> d.x
+          y2: (d) -> d.y
+        )
+        .classed('chromatic', (d) -> d.chromatic)
+      d3.select(this).selectAll('circle').data(endpoints).enter().append('circle')
+        .attr(
+          cx: (d) -> d.x
+          cy: (d) -> d.y
+          r: style.pitch_circle.note.radius
+        )
+        .classed('chromatic', (d) -> d.chromatic)
+        .classed('root', (d) -> d.pitch == 0)
+        .classed('fifth', (d) -> d.pitch == 7)
 
   update: ->
-    ScaleNames.forEach (name, i) =>
-      @views[name].animate fill: (if name == State.scale_class_name then 'lightBlue' else 'white')
+    scales = d3.select('#scales').selectAll('.scale')
+      .classed('selected', (d) -> d == State.scale_class_name)
 
 
 class FingerboardView
@@ -288,7 +287,7 @@ class FingerboardView
       .text((d) -> d.scale_degree_name)
 
   update: ->
-    keyboardView.update_keyboard scale_root
+    keyboardView.update()
     scale_root_name = State.scale_root_name
     scale_root = State.scale_root_pitch
     scale = Scales[State.scale_class_name]
@@ -314,7 +313,6 @@ class FingerboardView
           .text(({pitch}) -> pitch_name(pitch, pitch_name_options).replace(/(.).*/, '$1'))
       note_label.select('.accidental')
           .text(({pitch}) -> pitch_name(pitch, pitch_name_options).replace(/^./, ''))
-
 
   update_instrument: ->
     string_pitches = Instruments[State.instrument_name]

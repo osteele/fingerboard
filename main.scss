@@ -163,3 +163,39 @@ svg text {
     -webkit-transition: fill 0.2s;
   }
 }
+
+#scales {
+  background: white;
+  border: 1px solid gray;
+  width: 290px;
+
+  .scale {
+    background: white;
+    float: left;
+    width: 90px;
+    border: 1px solid black;
+    margin: 0 0 3px 3px;
+    padding: 2px 2px 5px;
+    border-radius: 2px;
+    -webkit-border-radius: 2px;
+
+    &.selected { background: lightBlue !important; }
+
+    &:hover { background: lightGray; }
+
+    h2 { font-size: x-small; margin: 0 0 5px 0; text-align: center; }
+
+    svg { display: block; margin-left: auto; margin-right: auto; }
+
+    circle {
+      fill: gray;
+      stroke: black;
+      &.chromatic { fill: none; }
+      &.root { fill: rgb(255, 96, 96); }
+      &.fifth { fill: rgb(192, 192, 255); }
+    }
+
+    line { stroke: gray; }
+    line.chromatic { stroke: none; }
+  }
+}
