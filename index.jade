@@ -4,14 +4,15 @@ html(lang="en")
     title Fingerboard Scales
     meta(http-equiv="content-type", content="text/html; charset=UTF-8")
     link(rel="icon", type="image/png", href="fretboard-icon.png")
-    link(href="#{cdn_scheme}//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css", rel="stylesheet", type="text/css")
+    link(href="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.0.0-rc1/css/bootstrap.min.css", rel="stylesheet", type="text/css")
     link(href="./main.css", rel="stylesheet", type="text/css")
     link(href="http://fonts.googleapis.com/css?family=Abel|Open+Sans:400,600", rel="stylesheet")
-    script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/raphael/2.1.0/raphael-min.js")
-    script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js")
-    script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/d3/3.2.2/d3.v3.min.js")
-    script(src="#{cdn_scheme}//netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js")
-    script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js")
+    script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/raphael/2.1.0/raphael-min.js", defer)
+    script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js", defer)
+    script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/d3/3.2.2/d3.v3.min.js", defer)
+    script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.0.0-rc1/js/bootstrap.min.js", defer)
+    script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js", defer)
+    script(src="./fingerboard.js", defer)
   body
     h1 Fingerboard Scales
 
@@ -52,8 +53,6 @@ html(lang="en")
           a(href="http://openclipart.org/detail/4802/violin-by-papapishu") Favicon
           =' by papapishu, in the public domain at '
           a(href="http://openclipart.org") Openclipart.
-
-    script(src="./fingerboard.js")
 
     if debug
       script(src="http://localhost:35729/livereload.js")
