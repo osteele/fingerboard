@@ -86,6 +86,7 @@ module.exports = (grunt) ->
   grunt.loadNpmTasks 'grunt-contrib-sass'
   grunt.loadNpmTasks 'grunt-contrib-watch'
   grunt.loadNpmTasks 'grunt-github-pages'
+  grunt.loadNpmTasks 'grunt-notify'
 
   grunt.registerTask 'build', ['coffeelint',  'coffee:debug', 'jade:debug', 'sass:debug', 'copy:debug']
   grunt.registerTask 'build:release', ['coffeelint', 'coffee:release', 'jade:release', 'sass:release', 'copy:release']
