@@ -73,7 +73,7 @@ h1 {
 #footer .muted a { color: gray }
 
 svg text {
-  cursor: pointer;
+  cursor: default;
 }
 
 #fingerboard .nut {
@@ -98,8 +98,10 @@ svg text {
     fill: black;
     font-size: 20px;
     text-anchor: middle;
-    // letter-spacing: -4px;
   }
+
+  .note { letter-spacing: -2px; }
+  .accidental { baseline-shift: 0%; font-size: 70%; }
 
   &.scale {
     circle { fill: lightGreen; }
@@ -129,32 +131,35 @@ svg text {
   }
 }
 
-#keyboard .piano-key rect {
-  fill: white;
-  stroke: black;
-}
+#keyboard .piano-key {
+  rect {
+    fill: white;
+    stroke: black;
+  }
 
-#keyboard .piano-key.black-key rect {
-  fill: black;
-}
+  text {
+    cursor: pointer;
+    font-size: 20px;
+    letter-spacing: -1px;
+    text-anchor: middle;
+  }
 
-#keyboard .piano-key.root rect {
-  fill: rgb(255, 96, 96) !important;
-}
+  &.black-key {
+    rect { fill: black; }
 
-#keyboard .piano-key:hover rect {
-  fill: gray;
-  transition: fill 0.2s;
-  -webkit-transition: fill 0.2s;
-}
+    text {
+      font-size: 12px;
+      fill: white;
+    }
+  }
 
-#keyboard .piano-key text {
-  font-size: 20px;
-  text-anchor: middle;
-  letter-spacing: -1px;
-}
+  &.root rect {
+    fill: rgb(255, 96, 96) !important;
+  }
 
-#keyboard .piano-key.black-key text {
-  font-size: 12px;
-  fill: white;
+  &:hover rect {
+    fill: gray;
+    transition: fill 0.2s;
+    -webkit-transition: fill 0.2s;
+  }
 }

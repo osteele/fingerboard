@@ -213,38 +213,15 @@ class ScaleSelectorView
 
 class FingerboardView
   constructor: ->
+    @label_sets = ['notes', 'fingerings', 'scale-degrees']
     @note_display = 'notes'
-    @draw_fingerboard()
 
-  draw_fingerboard: ->
-    style = FingerboardStyle
-
-    root = d3.select('#fingerboard').append('svg')
-      .attr('width', StringCount * style.string_width)
-      .attr('height', FingerPositions * style.fret_height)
-
-    nut_y = style.fret_height - 5
-    root.append('line')
-      .classed('nut', true)
-      .attr(x1: 0, y1: nut_y, x2: StringCount * style.string_width, y2: nut_y)
-
-    root.selectAll('.string')
-      .data([0...StringCount]).enter()
-    .append('line')
-      .classed('string', true)
-      .attr(
-        x1: (d) -> (d + 0.5) * style.string_width
-        y1: style.fret_height * 0.5
-        x2: (d) -> (d + 0.5) * style.string_width
-        y2: (1 + FingerPositions) * style.fret_height
-      )
-
-    note_style = FingerboardNoteStyle
     finger_positions = []
     for string_number in [0...StringCount]
       for fret_number in [0..FingerPositions]
         pitch = pitch_at(string_number, fret_number)
-        note_name = pitch_name(pitch)
+        note_name = pitch_name(pitch).replace(/(.)(.)/, '$1-$2')
+        console.info note_name
         fingering_name = String(Math.ceil(fret_number / 2))
         scale_degree_name = ScaleDegreeNames[pitch]
         finger_positions.push {
@@ -256,6 +233,33 @@ class FingerboardView
           scale_degree_name
         }
 
+    style = FingerboardStyle
+    note_style = FingerboardNoteStyle
+
+    root = d3.select('#fingerboard').append('svg')
+      .attr('width', StringCount * style.string_width)
+      .attr('height', FingerPositions * style.fret_height)
+
+    # nut
+    root.append('line')
+      .classed('nut', true)
+      .attr(
+        x2: StringCount * style.string_width
+        transform: "translate(0, #{style.fret_height - 5})"
+      )
+
+    # strings
+    root.selectAll('.string')
+      .data([0...StringCount]).enter()
+    .append('line')
+      .classed('string', true)
+      .attr(
+        y1: style.fret_height * 0.5
+        y2: (1 + FingerPositions) * style.fret_height
+        transform: (d) -> "translate(#{(d + 0.5) * style.string_width}, 0)"
+      )
+
+    # notes
     @d3_notes = root.selectAll('.finger-position')
       .data(finger_positions).enter()
     .append('g')
@@ -267,31 +271,32 @@ class FingerboardView
       )
 
     @d3_notes.append('circle')
-      .attr(r: 20)
+      .attr(r: note_style.all.radius)
 
-    @d3_notes.append('text')
+    note_labels = @d3_notes.append('text')
       .classed('note', true)
       .attr(y: 7)
-      .text(({note_name}) -> note_name)
+    note_labels.append('tspan').classed('base', true)
+    note_labels.append('tspan').classed('accidental', true)
     @d3_notes.append('text')
       .classed('fingering', true)
       .attr(y: 7)
-      .text(({fingering_name}) -> fingering_name)
+      .text((d) -> d.fingering_name)
     @d3_notes.append('text')
       .classed('scale-degree', true)
       .attr(y: 7)
-      .text(({scale_degree_name}) -> scale_degree_name)
+      .text((d) -> d.scale_degree_name)
 
   update: ->
+    keyboardView.update_keyboard scale_root
     scale_root_name = State.scale_root_name
     scale_root = State.scale_root_pitch
-    keyboardView.update_keyboard scale_root
     scale = Scales[State.scale_class_name]
     scale_pitches = ((n + scale_root) % 12 for n in scale)
 
-    for k in ['notes', 'fingerings', 'scale_degrees']
-      visible = k == @note_display
-      labels = d3.select('#fingerboard').selectAll('.' + k.replace(/s$/, '').replace(/_/g, '-'))
+    for k in @label_sets
+      visible = k == @note_display.replace(/_/g, '-')
+      labels = d3.select('#fingerboard').selectAll('.' + k.replace(/s$/, ''))
       labels.attr('visibility', if visible then 'inherit' else 'hidden')
 
     pitch_name_options = {sharp: true}
@@ -299,18 +304,21 @@ class FingerboardView
 
     @d3_notes.each ({pitch, circle}) ->
       scale_degree = (pitch - scale_pitches[0] + 12) % 12
-      d3.select(this)
+      note_label = d3.select(this)
         .classed('scale', pitch in scale_pitches)
         .classed('chromatic', pitch not in scale_pitches)
         .classed('root', scale_degree == 0)
         .classed('fifth', scale_degree == 7)
-        .select('text')
-          .text(({pitch}) -> pitch_name(pitch, pitch_name_options))
+        .select('.note')
+      note_label.select('.base')
+          .text(({pitch}) -> pitch_name(pitch, pitch_name_options).replace(/(.).*/, '$1'))
+      note_label.select('.accidental')
+          .text(({pitch}) -> pitch_name(pitch, pitch_name_options).replace(/^./, ''))
 
 
   update_instrument: ->
     string_pitches = Instruments[State.instrument_name]
-    for note in @note_views
+    @d3_notes.each (note) ->
       {string_number, fret_number} = note
       note.pitch = (string_pitches[string_number] + fret_number) % 12
     @update()
@@ -349,13 +357,14 @@ class NoteGridView
         else null
       circle.attr fill: fill
 
-  update_background_scale: () ->
+  update: () ->
     @update_note_colors()
     scale_pitches = Scales[State.scale_class_name]
     scale_root = State.scale_root_pitch
     bass_pitch = Instruments[State.instrument_name][0]
     scale_pitches = ((n + scale_root - bass_pitch + 12) % 12 for n in scale_pitches)
     pos = $('#fingerboard').offset()
+    # FIXME why the fudge factors?
     pos.left += 1
     pos.top += 2
     style = FingerboardStyle
@@ -370,14 +379,14 @@ keyboardView = new KeyboardView
 
 fingerboardView.update()
 scaleSelectorView.update()
-noteGridView.update_background_scale()
+noteGridView.update()
 
 $('#instruments .btn').click ->
   $('#instruments .btn').removeClass('btn-default')
   $(@).addClass('btn-default')
   State.instrument_name = $(@).text()
   fingerboardView.update_instrument()
-  noteGridView.update_background_scale()
+  noteGridView.update()
 
 $('#fingerings .btn').click ->
   $('#fingerings .btn').removeClass('btn-default')
