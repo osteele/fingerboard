@@ -4,7 +4,7 @@ module.exports = (grunt) ->
     coffee:
       debug:
         expand: true
-        cwd: "coffee"
+        cwd: "app"
         src: "*.coffee"
         dest: "build"
         ext: ".js"
@@ -12,7 +12,7 @@ module.exports = (grunt) ->
           sourceMap: true
       release:
         expand: true
-        cwd: "coffee"
+        cwd: "app"
         src: "*.coffee"
         dest: "release"
         ext: ".js"
@@ -25,13 +25,13 @@ module.exports = (grunt) ->
     copy:
       debug:
         expand: true
-        cwd: 'public/'
+        cwd: 'app/assets/'
         dest: 'build/'
         src: '**'
         filter: 'isFile'
       release:
         expand: true
-        cwd: 'public/'
+        cwd: 'app/assets/'
         dest: 'release/'
         src: '**'
         filter: 'isFile'
@@ -41,7 +41,7 @@ module.exports = (grunt) ->
     jade:
       debug:
         files:
-          'build/index.html': 'index.jade'
+          'build/index.html': 'app/views/index.jade'
         options:
           pretty: true
           data:
@@ -49,7 +49,7 @@ module.exports = (grunt) ->
             debug: true
       release:
         files:
-          'release/index.html': 'index.jade'
+          'release/index.html': 'app/views/index.jade'
         options:
           data:
             cdn_scheme: ''
@@ -57,12 +57,12 @@ module.exports = (grunt) ->
     sass:
       debug:
         files:
-          'build/main.css': 'main.scss'
+          'build/main.css': 'app/views/styles/main.scss'
         options:
           sourcemap: true
       release:
         files:
-          'release/main.css': 'main.scss'
+          'release/main.css': 'app/views/styles/main.scss'
         options:
           sourcemap: false
           style: 'compressed'
@@ -70,10 +70,10 @@ module.exports = (grunt) ->
       options:
         livereload: true
       sass:
-        files: ['main.scss']
+        files: ['app/**/main.scss']
         tasks: ['sass:debug']
       jade:
-        files: ['index.jade']
+        files: ['app/**/index.jade']
         tasks: ['jade:debug']
       scripts:
         files: ['**/*.coffee']

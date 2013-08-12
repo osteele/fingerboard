@@ -6,7 +6,7 @@
 
 html {
   /* http://css-tricks.com/perfect-full-page-background-image/ */
-  background: #1F2221 url(img/violin-scroll.jpg) no-repeat center center fixed;
+  background: #1F2221 url(images/violin-scroll.jpg) no-repeat center center fixed;
   @include vendor-prefix(background-size, cover);
 }
 
