@@ -325,21 +325,23 @@ class NoteGridView
     row_count = 12
     pos = $('#fingerboard').offset()
 
-    root = d3.select('#scale-notes').append('svg').attr(
-      width: column_count * style.string_width
-      height: row_count * style.fret_height
-    )
-
     notes = _.flatten({column, row} for column in [0...column_count] for row in [0...row_count])
     notes.forEach (note) ->
       note.scale_degree = pitch_class(note.column * 7 + note.row)
     degrees = d3.nest()
       .key((d) -> d.scale_degree)
       .entries(notes)
+    degree.scale_degree = Number(degree.key) for degree in degrees
 
-    @note_views = root.selectAll('g')
+    @root = d3.select('#scale-notes').append('svg')
+      .attr(
+        width: column_count * style.string_width
+        height: row_count * style.fret_height
+      )
+
+    @note_views = @root.selectAll('.scale-degree')
       .data(degrees).enter()
-      .append('g')
+      .append('g').classed('scale-degree', true)
       .selectAll('.note').data((d) -> d.values)
         .enter()
           .append('g')
@@ -372,7 +374,7 @@ class NoteGridView
     @scale_class_name = scale_class_name
     scale_pitches = Scales[State.scale_class_name]
 
-    @note_views
+    @root.selectAll('.scale-degree')
       .classed('chromatic', (d) -> d.scale_degree not in scale_pitches)
       .classed('tonic', (d) -> d.scale_degree in scale_pitches and d.scale_degree == 0)
       .classed('fifth', (d) -> d.scale_degree in scale_pitches and d.scale_degree == 7)
