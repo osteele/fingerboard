@@ -53,24 +53,6 @@ ScaleRootColor = 'rgb(255, 96, 96)'
 FingerboardNoteStyle =
   all:
     radius: 20
-    stroke: 'blue'
-    'fill-opacity': 1
-    'stroke-opacity': 1
-    label:
-      fill: 'black'
-      'font-size': 20
-  scale:
-    fill: 'lightGreen'
-  root:
-    fill: ScaleRootColor
-    label: {'font-weight': 'bold'}
-  fifth: {fill: 'rgb(192,192,255)'}
-  chromatic:
-    stroke: 'white'
-    fill: 'white'
-    'fill-opacity': 0
-    'stroke-opacity': 0
-    label: {fill: 'gray', 'font-size': 15}
 
 KeyboardStyle =
   Key:
@@ -91,10 +73,6 @@ ScaleStyle =
     radius: 28
     note:
       radius: 3
-    root:
-      fill: 'rgb(255,128,128)'
-    fifth:
-      fill: 'rgb(128,128,255)'
 
 pitch_at = (string_number, fret_number) ->
   (string_number * 7 + fret_number) % 12
@@ -111,12 +89,13 @@ pitch_name = (pitch, options={}) ->
 class KeyboardView
   constructor: ->
     style = KeyboardStyle
-    root = d3.select('#keyboard').append('svg')
-      .attr('width', 7 * (style.Key.width + style.Key.margin))
-      .attr('height', style.WhiteKey.height + 1)
+    root = d3.select('#keyboard').append('svg').attr(
+      width: 7 * (style.Key.width + style.Key.margin)
+      height: style.WhiteKey.height + 1
+    )
 
     next_x = 1
-    @keys = [0...12].map (pitch) ->
+    keys = [0...12].map (pitch) ->
       note_name = pitch_name(pitch, flat: true)
       is_black_key = FlatNoteNames[pitch].length > 1
       {width, height} = key_style =
@@ -125,7 +104,7 @@ class KeyboardView
       next_x += width + KeyboardStyle.Key.margin unless is_black_key
       x -= width / 2 if is_black_key
       return {pitch, name: note_name, is_black_key, attrs: {width, height, x, y: 0}}
-    @keys.sort (a, b) -> a.is_black_key - b.is_black_key
+    keys.sort (a, b) -> a.is_black_key - b.is_black_key
 
     onclick = ({pitch, name}) ->
       State.scale_tonic_name = FlatNoteNames[pitch]
@@ -133,7 +112,7 @@ class KeyboardView
       D3State.scale_tonic()
 
     @d3_keys = root.selectAll('.piano-key')
-      .data(@keys).enter()
+      .data(keys).enter()
     .append('g')
       .classed('piano-key', true)
       .classed('black-key', ({is_black_key}) -> is_black_key)
@@ -336,21 +315,36 @@ class NoteGridView
   constructor: ->
     @views = []
     style = FingerboardStyle
-    string_count = 12 * 5
-    fret_count = 12
-    paper = Raphael('scale-notes', string_count * style.string_width, fret_count * style.fret_height)
+    column_count = 12 * 5
+    row_count = 12
     pos = $('#fingerboard').offset()
     pos.left += 5
     pos.top += 4
     $('#scale-notes').css(left: pos.left, top: pos.top)
-    for string_number in [0...string_count]
-      for fret_number in [0...fret_count]
-        pitch = (string_number * 7 + fret_number) % 12
-        x = (string_number + 0.5) * style.string_width
-        y = fret_number * style.fret_height + FingerboardNoteStyle.all.radius + 1
-        circle = paper.circle(x, y, FingerboardNoteStyle.all.radius).attr fill: 'red'
-        label = paper.text(x, y, ScaleDegreeNames[pitch]).attr fill: 'white', 'font-size': 16
-        @views.push {pitch, circle, label}
+
+    root = d3.select('#scale-notes').append('svg').attr(
+      width: column_count * style.string_width
+      height: row_count * style.fret_height
+    )
+
+    notes = _.flatten({column, fret_number} for column in [0...column_count] for fret_number in [0...row_count])
+    notes.forEach (note) ->
+      note.scale_degree = (note.column * 7 + note.fret_number) % 12
+    @note_views = root.selectAll('.note')
+      .data(notes).enter()
+    .append('g')
+      .classed('note', true)
+      .attr(
+        transform: ({column, fret_number}) ->
+          x = (column + 0.5) * style.string_width
+          y = fret_number * style.fret_height + FingerboardNoteStyle.all.radius + 1
+          "translate(#{x}, #{y})"
+        )
+    @note_views.append('circle')
+      .attr(r: FingerboardNoteStyle.all.radius)
+    @note_views.append('text')
+      .attr(y: 7)
+      .text((d) -> ScaleDegreeNames[d.scale_degree])
 
     D3State.on('instrument.note_grid', => @update())
     D3State.on('scale.note_grid', => @update())
@@ -363,6 +357,12 @@ class NoteGridView
     return if @scale_class_name == scale_class_name
     @scale_class_name = scale_class_name
     scale_pitches = Scales[State.scale_class_name]
+
+    @note_views
+      .classed('chromatic', (d) -> d.scale_degree not in scale_pitches)
+      .classed('tonic', (d) -> d.scale_degree in scale_pitches and d.scale_degree == 0)
+      .classed('fifth', (d) -> d.scale_degree in scale_pitches and d.scale_degree == 7)
+    return
     for {pitch, circle, label} in @views
       fill = switch
         when scale_pitches.indexOf(pitch) == 0 then 'red'

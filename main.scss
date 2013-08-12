@@ -50,6 +50,28 @@ $fifth-color: rgb(192, 192, 255);
     -moz-transition: left 2s, top 2s, -moz-transform 2s;
     -webkit-transition: left 2s, top 2s, -webkit-transform 2s;
   }
+
+  circle {
+    fill: green;
+  }
+
+  .chromatic circle {
+    fill: none;
+  }
+
+  .tonic circle {
+    fill: red;
+  }
+
+  .fifth circle {
+    fill: blue;
+  }
+
+  text {
+    font-size: 16px;
+    fill: white;
+    text-anchor: middle;
+  }
 }
 
 #fingerings .btn {
