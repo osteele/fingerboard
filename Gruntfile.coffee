@@ -1,11 +1,11 @@
 module.exports = (grunt) ->
   grunt.initConfig
     pkg: grunt.file.readJSON('package.json')
-    coffee:
+    livescript:
       debug:
         expand: true
         cwd: "app"
-        src: "*.coffee"
+        src: "*.ls"
         dest: "build"
         ext: ".js"
         options:
@@ -13,7 +13,7 @@ module.exports = (grunt) ->
       release:
         expand: true
         cwd: "app"
-        src: "*.coffee"
+        src: "*.ls"
         dest: "release"
         ext: ".js"
         options:
@@ -76,8 +76,8 @@ module.exports = (grunt) ->
         files: ['app/**/index.jade']
         tasks: ['jade:debug']
       scripts:
-        files: ['**/*.coffee']
-        tasks: ['coffeelint', 'coffee:debug']
+        files: ['**/*.ls']
+        tasks: ['livescript:debug']
 
   grunt.loadNpmTasks 'grunt-coffeelint'
   grunt.loadNpmTasks 'grunt-contrib-coffee'
@@ -86,9 +86,10 @@ module.exports = (grunt) ->
   grunt.loadNpmTasks 'grunt-contrib-sass'
   grunt.loadNpmTasks 'grunt-contrib-watch'
   grunt.loadNpmTasks 'grunt-github-pages'
+  grunt.loadNpmTasks 'grunt-livescript'
   grunt.loadNpmTasks 'grunt-notify'
 
-  grunt.registerTask 'build', ['coffeelint',  'coffee:debug', 'jade:debug', 'sass:debug', 'copy:debug']
-  grunt.registerTask 'build:release', ['coffeelint', 'coffee:release', 'jade:release', 'sass:release', 'copy:release']
+  grunt.registerTask 'build', ['livescript:debug', 'jade:debug', 'sass:debug', 'copy:debug']
+  grunt.registerTask 'build:release', ['livescript:release', 'jade:release', 'sass:release', 'copy:release']
   grunt.registerTask 'deploy', ['build:release', 'githubPages:target']
   grunt.registerTask 'default', ['watch']
