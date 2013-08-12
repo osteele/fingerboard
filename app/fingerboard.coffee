@@ -74,8 +74,13 @@ ScaleStyle =
     note:
       radius: 3
 
+Pitches = [0...12]
+
 pitch_at = (string_number, fret_number) ->
-  (string_number * 7 + fret_number) % 12
+  pitch_class string_number * 7 + fret_number
+
+pitch_class = (pitch) ->
+  ((pitch % 12) + 12) % 12
 
 pitch_name = (pitch, options={}) ->
   flatName = FlatNoteNames[pitch]
@@ -95,7 +100,7 @@ class KeyboardView
     )
 
     next_x = 1
-    keys = [0...12].map (pitch) ->
+    keys = Pitches.map (pitch) ->
       note_name = pitch_name(pitch, flat: true)
       is_black_key = FlatNoteNames[pitch].length > 1
       {width, height} = key_style =
@@ -166,7 +171,7 @@ class ScaleSelectorView
     scales.selectAll('svg g').each (scale_name) ->
       pitches = Scales[scale_name]
       r = style.pitch_circle.radius
-      endpoints = [0...12].map (pitch) ->
+      endpoints = Pitches.map (pitch) ->
         a = (pitch - 3) * 2 * Math.PI / 12
         x = Math.cos(a) * r
         y = Math.sin(a) * r
@@ -280,7 +285,8 @@ class FingerboardView
     scale_tonic_name = State.scale_tonic_name
     scale_tonic = State.scale_tonic_pitch
     scale = Scales[State.scale_class_name]
-    scale_pitches = ((n + scale_tonic) % 12 for n in scale)
+    scale_pitches = (pitch_class(pitch + scale_tonic) for pitch in scale)
+    tonic = scale_pitches[0]
 
     for k in @label_sets
       visible = k == @note_display.replace(/_/g, '-')
@@ -291,7 +297,7 @@ class FingerboardView
     pitch_name_options = {flat: true} if scale_tonic_name.match(/b/)
 
     @d3_notes.each ({pitch, circle}) ->
-      scale_degree = (pitch - scale_pitches[0] + 12) % 12
+      scale_degree = pitch_class(pitch - tonic)
       note_label = d3.select(this)
         .classed('scale', pitch in scale_pitches)
         .classed('chromatic', pitch not in scale_pitches)
@@ -307,7 +313,7 @@ class FingerboardView
     string_pitches = Instruments[State.instrument_name]
     @d3_notes.each (note) ->
       {string_number, fret_number} = note
-      note.pitch = (string_pitches[string_number] + fret_number) % 12
+      note.pitch = pitch_class(string_pitches[string_number] + fret_number)
     @update()
 
 
@@ -318,28 +324,33 @@ class NoteGridView
     column_count = 12 * 5
     row_count = 12
     pos = $('#fingerboard').offset()
-    pos.left += 5
-    pos.top += 4
-    $('#scale-notes').css(left: pos.left, top: pos.top)
 
     root = d3.select('#scale-notes').append('svg').attr(
       width: column_count * style.string_width
       height: row_count * style.fret_height
     )
 
-    notes = _.flatten({column, fret_number} for column in [0...column_count] for fret_number in [0...row_count])
+    notes = _.flatten({column, row} for column in [0...column_count] for row in [0...row_count])
     notes.forEach (note) ->
-      note.scale_degree = (note.column * 7 + note.fret_number) % 12
-    @note_views = root.selectAll('.note')
-      .data(notes).enter()
-    .append('g')
-      .classed('note', true)
-      .attr(
-        transform: ({column, fret_number}) ->
-          x = (column + 0.5) * style.string_width
-          y = fret_number * style.fret_height + FingerboardNoteStyle.all.radius + 1
-          "translate(#{x}, #{y})"
-        )
+      note.scale_degree = pitch_class(note.column * 7 + note.row)
+    degrees = d3.nest()
+      .key((d) -> d.scale_degree)
+      .entries(notes)
+
+    @note_views = root.selectAll('g')
+      .data(degrees).enter()
+      .append('g')
+      .selectAll('.note').data((d) -> d.values)
+        .enter()
+          .append('g')
+          .classed('note', true)
+          .attr(
+            transform: ({column, row}) ->
+              x = (column + 0.5) * style.string_width
+              y = row * style.fret_height + FingerboardNoteStyle.all.radius
+              "translate(#{x}, #{y})"
+            )
+
     @note_views.append('circle')
       .attr(r: FingerboardNoteStyle.all.radius)
     @note_views.append('text')
@@ -352,6 +363,9 @@ class NoteGridView
 
     @update()
 
+    # defer this, so it doesn't affect the initial positioning
+    setTimeout (-> $('#scale-notes').addClass('animate')), 1
+
   update_note_colors: ->
     scale_class_name = State.scale_class_name
     return if @scale_class_name == scale_class_name
@@ -362,29 +376,18 @@ class NoteGridView
       .classed('chromatic', (d) -> d.scale_degree not in scale_pitches)
       .classed('tonic', (d) -> d.scale_degree in scale_pitches and d.scale_degree == 0)
       .classed('fifth', (d) -> d.scale_degree in scale_pitches and d.scale_degree == 7)
-    return
-    for {pitch, circle, label} in @views
-      fill = switch
-        when scale_pitches.indexOf(pitch) == 0 then 'red'
-        when pitch in scale_pitches and pitch == 7 then 'blue'
-        when pitch in scale_pitches then 'green'
-        else null
-      circle.attr fill: fill
 
   update: () ->
     @update_note_colors()
     scale_pitches = Scales[State.scale_class_name]
     scale_tonic = State.scale_tonic_pitch
     bass_pitch = Instruments[State.instrument_name][0]
-    scale_pitches = ((n + scale_tonic - bass_pitch + 12) % 12 for n in scale_pitches)
-    pos = $('#fingerboard').offset()
-    # FIXME why the fudge factors?
-    pos.left += 1
-    pos.top += 2
+    scale_pitches = (pitch_class(n + scale_tonic - bass_pitch) for n in scale_pitches)
     style = FingerboardStyle
-    pos.left -= style.string_width * ((scale_pitches[0] * 5) % 12)
-    $('#scale-notes').addClass('animate')
-    $('#scale-notes').css(left: pos.left, top: pos.top)
+    pos = $('#fingerboard').offset()
+    pos.left -= style.string_width * pitch_class(scale_pitches[0] * 5)
+    # FIXME why the fudge factors?
+    $('#scale-notes').css(left: pos.left + 1, top: pos.top + 1)
 
 scaleSelectorView = new ScaleSelectorView
 fingerboardView = new FingerboardView
