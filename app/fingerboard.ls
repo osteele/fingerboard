@@ -39,7 +39,7 @@ State =
   scale_tonic_pitch: 0
   scale_class_name: 'Diatonic Major'
 
-D3State = d3.dispatch \instrument \scale \scale_tonic
+D3State = d3.dispatch \instrument \note_label \scale \scale_tonic
 
 const StringCount = 4
 const FingerPositions = 7
@@ -47,18 +47,15 @@ const FingerPositions = 7
 const FingerboardStyle =
   string_width: 50
   fret_height: 50
-
-const FingerboardNoteStyle =
-  all:
-    radius: 20
+  note_radius: 20
 
 KeyboardStyle =
-  Key:
+  key:
     width: 25
-    margin: 3
-  WhiteKey:
+    h_margin: 3
+  white_key:
     height: 120
-  BlackKey:
+  black_key:
     height: 90
 
 const ScaleStyle =
@@ -90,22 +87,20 @@ pitch_name = (pitch, options={}) ->
 
 
 class KeyboardView
-  ->
-    style = KeyboardStyle
-    root = d3.select '#keyboard'
-      .append \svg
+  (selection, style) ->
+    root = selection.append \svg
       .attr do
-        width: 7 * (style.Key.width + style.Key.margin)
-        height: style.WhiteKey.height + 1
+        width: 7 * (style.key.width + style.key.h_margin)
+        height: style.white_key.height + 1
 
     next_x = 1
     keys = Pitches.map (pitch) ->
       note_name = pitch_name pitch, flat: true
       is_black_key = FlatNoteNames[pitch].length > 1
       {width, height} = key_style =
-        _.extend {}, KeyboardStyle.Key, (if is_black_key then KeyboardStyle.BlackKey else KeyboardStyle.WhiteKey)
+        _.extend {}, style.key, (if is_black_key then style.black_key else style.white_key)
       x = next_x
-      next_x += width + KeyboardStyle.Key.margin unless is_black_key
+      next_x += width + style.key.h_margin unless is_black_key
       x -= width / 2 if is_black_key
       return {pitch, name: note_name, is_black_key, attrs: {width, height, x, y: 0}}
     keys.sort (a, b) -> a.is_black_key - b.is_black_key
@@ -115,45 +110,42 @@ class KeyboardView
       State.scale_tonic_pitch = pitch
       D3State.scale_tonic!
 
-    @d3_keys = root.selectAll \.piano-key
+    key_views = root.selectAll \.piano-key
       .data(keys).enter!
     .append \g
       .classed \piano-key true
       .classed \black-key (.is_black_key)
+      .classed \white-key -> (not it.is_black_key)
       .on \click onclick
 
-    @d3_keys.append \rect
+    key_views.append \rect
       .attr do
         x: ({attrs}) -> attrs.x
         y: ({attrs}) -> attrs.y
         width: ({attrs}) -> attrs.width
         height: ({attrs}) -> attrs.height
 
-    @d3_keys.append \text
+    key_views.append \text
       .attr do
         x: ({attrs}) -> attrs.x + attrs.width / 2
         y: ({attrs}) -> attrs.y + attrs.height - 6
       .text ({name}) -> name
 
-    D3State.on \scale_tonic.keyboard ~> @update!
-    @update!
+    update = ->
+      key_views
+        .classed \root, ({pitch}) -> pitch == State.scale_tonic_pitch
 
-  update: ->
-    @d3_keys.each ({pitch}) ->
-      d3.select this
-        .classed \root, pitch == State.scale_tonic_pitch
+    D3State.on \scale_tonic.keyboard -> update!
+    update!
 
 
 class ScaleSelectorView
-  ->
-    style = ScaleStyle
-
-    onclick = (scale_name) ~>
+  (selection, style) ->
+    onclick = (scale_name) ->
       State.scale_class_name = scale_name
       D3State.scale!
-    D3State.on \scale.scale ~> @update!
 
-    scales = d3.select \#scales
+    @scales = scales = selection
       .selectAll \.scale
       .data ScaleNames
       .enter!
@@ -195,18 +187,16 @@ class ScaleSelectorView
             .attr \cy (.y)
             .attr \r style.pitch_circle.note.radius
 
-    @update!
+    update = ->
+      scales.classed 'selected', -> it == State.scale_class_name
 
-  update: ->
-    scales = d3.select \#scales
-      .selectAll \.scale
-        .classed 'selected', -> it == State.scale_class_name
+    D3State.on \scale.scale ~> update!
+    update!
 
 
 class FingerboardView
-  ->
+  (selection, style) ->
     @label_sets = <[ notes fingerings scale-degrees ]>
-    @note_display = \notes
 
     finger_positions = []
     for string_number from 0 til StringCount
@@ -224,10 +214,7 @@ class FingerboardView
           scale_degree_name
         }
 
-    style = FingerboardStyle
-    note_style = FingerboardNoteStyle
-
-    root = d3.select '#fingerboard'
+    root = selection
       .append \svg
         .attr width: StringCount * style.string_width
         .attr height: FingerPositions * style.fret_height
@@ -258,11 +245,11 @@ class FingerboardView
           .classed \finger-position true
           .attr transform: ({string_number, fret_number}) ->
             dx = (string_number + 0.5) * style.string_width
-            dy = fret_number * style.fret_height + note_style.all.radius + 1
+            dy = fret_number * style.fret_height + style.note_radius + 1
             "translate(#{dx}, #{dy})"
 
     @d3_notes.append \circle
-      .attr r: note_style.all.radius
+      .attr r: style.note_radius
 
     note_labels = @d3_notes.append \text .classed \note true .attr y: 7
     note_labels.append \tspan .classed \base true
@@ -277,6 +264,7 @@ class FingerboardView
       .text (.scale_degree_name)
 
     D3State.on \instrument.fingerboard ~> @update_instrument!
+    D3State.on \note_label ~> @update!
     D3State.on \scale.fingerboard ~> @update!
     D3State.on \scale_tonic.fingerboard ~> @update!
 
@@ -289,8 +277,9 @@ class FingerboardView
     scale_pitches = [pitch_class(pitch + scale_tonic) for pitch in scale]
     tonic = scale_pitches[0]
 
+    State.note_label or= \notes
     for k in @label_sets
-      visible = k == @note_display.replace /_/g '-'
+      visible = k == State.note_label.replace /_/g '-'
       labels = d3.select \#fingerboard .selectAll '.' + k.replace /s$/ ''
       labels.attr \visibility (if visible then 'inherit' else 'hidden')
 
@@ -319,28 +308,26 @@ class FingerboardView
 
 
 class NoteGridView
-  ->
-    @views = []
-    style = FingerboardStyle
-    column_count = 12 * 5
-    row_count = 12
-    pos = $('#fingerboard').offset!
+  (selection, style) ->
+    const column_count = 12 * 5
+    const row_count = 12
 
     notes = [{column, row} for column in [0 til column_count] for row in [0 til row_count]]
     for note in notes then note.scale_degree = pitch_class note.column * 7 + note.row
-    degrees = d3.nest!
+    degree_groups = d3.nest!
       .key (.scale_degree)
       .entries notes
-    for degree in degrees then degree.scale_degree = Number(degree.key)
+    for degree in degree_groups then degree.scale_degree = Number(degree.key)
 
-    @root = d3.select '#scale-notes'
+    @selection = selection
+    @root = selection
       .append \svg
         .attr do
           width: column_count * style.string_width
           height: row_count * style.fret_height
 
     @note_views = @root.selectAll \.scale-degree
-      .data degrees
+      .data degree_groups
       .enter!
         .append \g
           .classed \scale-degree true
@@ -351,11 +338,11 @@ class NoteGridView
               .classed \note true
               .attr transform: ({column, row}) ->
                   x = (column + 0.5) * style.string_width
-                  y = row * style.fret_height + FingerboardNoteStyle.all.radius
+                  y = row * style.fret_height + style.note_radius
                   "translate(#{x}, #{y})"
 
     @note_views.append \circle
-      .attr r: FingerboardNoteStyle.all.radius
+      .attr r: style.note_radius
     @note_views.append \text
       .attr y: 7
       .text -> ScaleDegreeNames[it.scale_degree]
@@ -366,13 +353,9 @@ class NoteGridView
 
     @update!
 
-    # defer this, so it doesn't affect the initial positioning
-    setTimeout (-> $('#scale-notes').addClass \animate), 1
+    setTimeout (-> selection.classed \animate true), 1
 
   update_note_colors: ->
-    scale_class_name = State.scale_class_name
-    return if @scale_class_name == scale_class_name
-    @scale_class_name = scale_class_name
     scale_pitches = Scales[State.scale_class_name]
 
     @root.selectAll \.scale-degree
@@ -390,12 +373,13 @@ class NoteGridView
     pos = $('#fingerboard').offset!
     pos.left -= style.string_width * pitch_class(scale_pitches[0] * 5)
     # FIXME why the fudge factors?
-    $('#scale-notes').css left: pos.left + 1, top: pos.top + 1
+    # FIXME why doesn't work: @selection.attr
+    @selection.each -> $(this).css left: pos.left + 1, top: pos.top + 1
 
-scaleSelectorView = new ScaleSelectorView
-fingerboardView = new FingerboardView
-noteGridView = new NoteGridView
-keyboardView = new KeyboardView
+new ScaleSelectorView(d3.select(\#scales), ScaleStyle)
+new FingerboardView(d3.select(\#fingerboard), FingerboardStyle)
+new NoteGridView(d3.select(\#scale-notes), FingerboardStyle)
+new KeyboardView(d3.select(\#keyboard), KeyboardStyle)
 
 $('#instruments .btn').click ->
   $('#instruments .btn').removeClass \btn-default
@@ -406,8 +390,8 @@ $('#instruments .btn').click ->
 $('#fingerings .btn').click ->
   $('#fingerings .btn').removeClass \btn-default
   $(@).addClass \btn-default
-  fingerboardView.note_display = $(@).text!.replace ' ' '_' .toLowerCase!
-  fingerboardView.update!
+  State.note_label = $(@).text!.replace(' ', '_').toLowerCase!
+  D3State.note_label!
 
 $('#about-text a').attr \target \_blank
 $('#about').popover content: $('#about-text').html!, html: true, placement: \bottom
