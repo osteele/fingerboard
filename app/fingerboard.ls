@@ -90,7 +90,7 @@ pitch_name = (pitch, options={}) ->
 
 
 class KeyboardView
-  (selection, style) ->
+  (selection, style) ~>
     root = selection.append \svg
       .attr do
         width: 7 * (style.key.width + style.key.h_margin)
@@ -143,7 +143,7 @@ class KeyboardView
 
 
 class ScaleSelectorView
-  (selection, style) ->
+  (selection, style) ~>
     onclick = (scale_name) ->
       State.scale_class_name = scale_name
       D3State.scale!
@@ -201,7 +201,7 @@ class ScaleSelectorView
 
 
 class FingerboardView
-  (selection, style) ->
+  (selection, style) ~>
     @label_sets = <[ notes fingerings scale-degrees ]>
 
     finger_positions = []
@@ -314,7 +314,7 @@ class FingerboardView
 
 
 class NoteGridView
-  (selection, style) ->
+  (selection, style) ~>
     const column_count = 12 * 5
     const row_count = 12
 
@@ -382,10 +382,10 @@ class NoteGridView
     # FIXME why doesn't work: @selection.attr
     @selection.each -> $(this).css left: pos.left + 1, top: pos.top + 1
 
-new ScaleSelectorView(d3.select(\#scales), ScaleStyle)
-new FingerboardView(d3.select(\#fingerboard), FingerboardStyle)
-new NoteGridView(d3.select(\#scale-notes), FingerboardStyle)
-new KeyboardView(d3.select(\#keyboard), KeyboardStyle)
+d3.select(\#fingerboard).call FingerboardView, FingerboardStyle
+d3.select(\#keyboard).call KeyboardView, KeyboardStyle
+d3.select(\#scales).call ScaleSelectorView, ScaleStyle
+d3.select(\#scale-notes).call NoteGridView, FingerboardStyle
 
 $('#instruments .btn').click ->
   $('#instruments .btn').removeClass \btn-default
