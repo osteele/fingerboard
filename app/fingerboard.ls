@@ -2,26 +2,29 @@ const SharpNoteNames = <[ C C# D D# E F F# G G# A A# B ]>
 const FlatNoteNames = <[ C Db D Eb E F Gb G Ab A Bb B ]>
 const ScaleDegreeNames = <[ 1 2b 2 3b 3 4 5b 5 6b 6 7b 7 ]>.map (.replace /(\d)/ '$1\u0302' .replace /b/g '\u266D')
 
-const Scales = [
-  {'Diatonic Major': [0 2 4 5 7 9 11]}
-  {'Natural Minor': [0 2 3 5 7 8 10]}
-  {'Major Pentatonic': [0 2 4 7 9]}
-  {'Minor Pentatonic': [0 3 5 7 10]}
-  {'Melodic Minor': [0 2 3 5 7 9 11]}
-  {'Harmonic Minor': [0 2 3 5 7 8 11]}
-  {'Blues': [0 3 5 6 7 10]}
-  {'Freygish': [0 1 4 5 7 8 10]}
-  {'Whole Tone': [0 2 4 6 8 10]}
-  {'Octatonic': [0 2 3 5 6 8 9 11]}
-]
+const Scales =
+  * name: 'Diatonic Major'
+    pitches: [0 2 4 5 7 9 11]
+  * name: 'Natural Minor'
+    pitches: [0 2 3 5 7 8 10]
+  * name: 'Major Pentatonic'
+    pitches: [0 2 4 7 9]
+  * name: 'Minor Pentatonic'
+    pitches: [0 3 5 7 10]
+  * name: 'Melodic Minor'
+    pitches: [0 2 3 5 7 9 11]
+  * name: 'Harmonic Minor'
+    pitches: [0 2 3 5 7 8 11]
+  * name: 'Blues'
+    pitches: [0 3 5 6 7 10]
+  * name: 'Freygish'
+    pitches: [0 1 4 5 7 8 10]
+  * name: 'Whole Tone'
+    pitches: [0 2 4 6 8 10]
+  * name: 'Octatonic'
+    pitches: [0 2 3 5 6 8 9 11]
 
-const ScaleNames = [_.keys(scale)[0] for scale in Scales]
-
-let
-  for scale in Scales
-    name = _.keys(scale)[0]
-    pitches = scale[name]
-    Scales[name] = pitches
+for scale in Scales then Scales[scale.name] = scale
 
 pitch_name_to_number = (pitch_name) ->
   pitch = FlatNoteNames.indexOf pitch_name
@@ -49,7 +52,7 @@ const FingerboardStyle =
   fret_height: 50
   note_radius: 20
 
-KeyboardStyle =
+const KeyboardStyle =
   key:
     width: 25
     h_margin: 3
@@ -147,19 +150,22 @@ class ScaleSelectorView
 
     @scales = scales = selection
       .selectAll \.scale
-      .data ScaleNames
+      .data Scales.map (.name)
       .enter!
-    .append \div
-      .classed \scale true
-      .on \click onclick
+        .append \div
+          .classed \scale true
+          .on \click onclick
+
     scales.append \h2 .text (scale_name) -> scale_name
+
     pc_width = 2 * (style.pitch_circle.radius + style.pitch_circle.note.radius + 1)
     scales.append \svg
       .attr width: pc_width, height: pc_width
       .append \g
-      .attr transform: "translate(#{pc_width / 2}, #{pc_width / 2})"
+        .attr transform: "translate(#{pc_width / 2}, #{pc_width / 2})"
+
     scales.selectAll 'svg g' .each (scale_name) ->
-      pitches = Scales[scale_name]
+      pitches = Scales[scale_name].pitches
       r = style.pitch_circle.radius
       endpoints = Pitches.map (pitch) ->
         a = (pitch - 3) * 2 * Math.PI / 12
@@ -274,7 +280,7 @@ class FingerboardView
     scale_tonic_name = State.scale_tonic_name
     scale_tonic = State.scale_tonic_pitch
     scale = Scales[State.scale_class_name]
-    scale_pitches = [pitch_class(pitch + scale_tonic) for pitch in scale]
+    scale_pitches = [pitch_class(pitch + scale_tonic) for pitch in scale.pitches]
     tonic = scale_pitches[0]
 
     State.note_label or= \notes
@@ -356,7 +362,7 @@ class NoteGridView
     setTimeout (-> selection.classed \animate true), 1
 
   update_note_colors: ->
-    scale_pitches = Scales[State.scale_class_name]
+    scale_pitches = Scales[State.scale_class_name].pitches
 
     @root.selectAll \.scale-degree
       .classed \chromatic ({scale_degree}) -> scale_degree not in scale_pitches
@@ -366,7 +372,7 @@ class NoteGridView
   update: ->
     @update_note_colors!
     style = FingerboardStyle
-    scale_pitches = Scales[State.scale_class_name]
+    scale_pitches = Scales[State.scale_class_name].pitches
     scale_tonic = State.scale_tonic_pitch
     bass_pitch = Instruments[State.instrument_name][0]
     scale_pitches = [pitch_class pitch + scale_tonic - bass_pitch for pitch in scale_pitches]
