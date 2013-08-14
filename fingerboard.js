@@ -2,7 +2,7 @@
   var SharpNoteNames, FlatNoteNames, ScaleDegreeNames, Scales, pitch_name_to_number, Instruments, State, D3State, StringCount, FingerPositions, FingerboardStyle, KeyboardStyle, ScaleStyle, Pitches, pitch_at, pitch_class, pitch_name, KeyboardView, ScaleSelectorView, FingerboardView, NoteGridView;
   SharpNoteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
   FlatNoteNames = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
-  ScaleDegreeNames = ['1', '2b', '2', '3b', '3', '4', '5b', '5', '6b', '6', '7b', '7'].map(function(it){
+  ScaleDegreeNames = ['1', 'b2', '2', 'b3', '3', '4', 'b5', '5', 'b6', '6', 'b7', '7'].map(function(it){
     return it.replace(/(\d)/, '$1\u0302').replace(/b/g, '\u266D');
   });
   Scales = [
