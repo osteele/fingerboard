@@ -33,16 +33,22 @@ pitch_name_to_number = (pitch_name) ->
   return pitch
 
 const Instruments =
-  Violin: [7 14 21 28]
-  Viola: [0 7 14 21]
-  Cello: [0 7 14 21]
+  * name: 'Violin'
+    string_pitches: [7 14 21 28]
+  * name: 'Viola'
+    string_pitches: [0 7 14 21]
+  * name: 'Cello'
+    string_pitches: [0 7 14 21]
+
+do ->
+  for instrument in Instruments then Instruments[instrument.name] = instrument
 
 State =
-  instrument_name: \Violin
+  instrument: Instruments.Violin
   scale: Scales.0
   scale_tonic_name: \C
-  scale_tonic_pitch: 0
-  scale_class_name: 'Diatonic Major'
+  scale_tonic_pitch:~
+    -> SharpNoteNames.indexOf(@scale_tonic_name) or FlatNoteNames.indexOf(@scale_tonic_name)
 
 D3State = d3.dispatch \instrument \note_label \scale \scale_tonic
 
@@ -93,35 +99,37 @@ pitch_name = (pitch, options={}) ->
 
 class KeyboardView
   (selection, style) ~>
+    keys = Pitches.map (pitch) ->
+      is_black_key = FlatNoteNames[pitch].length > 1
+      note_name = pitch_name pitch, flat: true
+      {height, width} = style.key with (if is_black_key then style.black_key else style.white_key)
+      return {pitch, name: note_name, is_black_key, attrs: {width, height, y: 0}}
+
+    x = 1
+    for {{width}:attrs, is_black_key} in keys
+      attrs.x = x
+      attrs.x -= width / 2 if is_black_key
+      x += width + style.key.h_margin unless is_black_key
+
+    # order the black keys on top of (following) the while keys
+    keys.sort (a, b) -> a.is_black_key - b.is_black_key
+
     root = selection.append \svg
       .attr do
         width: 7 * (style.key.width + style.key.h_margin)
         height: style.white_key.height + 1
 
-    next_x = 1
-    keys = Pitches.map (pitch) ->
-      note_name = pitch_name pitch, flat: true
-      is_black_key = FlatNoteNames[pitch].length > 1
-      {width, height} = key_style =
-        _.extend {}, style.key, (if is_black_key then style.black_key else style.white_key)
-      x = next_x
-      next_x += width + style.key.h_margin unless is_black_key
-      x -= width / 2 if is_black_key
-      return {pitch, name: note_name, is_black_key, attrs: {width, height, x, y: 0}}
-    keys.sort (a, b) -> a.is_black_key - b.is_black_key
-
     onclick = ({pitch, name}) ->
       State.scale_tonic_name = FlatNoteNames[pitch]
-      State.scale_tonic_pitch = pitch
       D3State.scale_tonic!
 
     key_views = root.selectAll \.piano-key
       .data(keys).enter!
-    .append \g
-      .classed \piano-key true
-      .classed \black-key (.is_black_key)
-      .classed \white-key -> (not it.is_black_key)
-      .on \click onclick
+        .append \g
+          .classed \piano-key true
+          .classed \black-key (.is_black_key)
+          .classed \white-key -> (not it.is_black_key)
+          .on \click onclick
 
     key_views.append \rect
       .attr do
@@ -132,8 +140,8 @@ class KeyboardView
 
     key_views.append \text
       .attr do
-        x: ({attrs}) -> attrs.x + attrs.width / 2
-        y: ({attrs}) -> attrs.y + attrs.height - 6
+        x: ({{x, width}:attrs}) -> x + width / 2
+        y: ({{y, height}:attrs}) -> y + height - 6
       .text ({name}) -> name
 
     update = ->
@@ -148,7 +156,6 @@ class ScaleSelectorView
   (selection, style) ~>
     onclick = (scale_name) ->
       State.scale = Scales[scale_name]
-      State.scale_class_name = scale_name
       D3State.scale!
 
     @scales = scales = selection
@@ -197,7 +204,7 @@ class ScaleSelectorView
             .attr \r style.pitch_circle.note.radius
 
     update = ->
-      scales.classed 'selected', -> it == State.scale_class_name
+      scales.classed 'selected', -> it == State.scale.name
 
     D3State.on \scale.scale ~> update!
     update!
@@ -297,7 +304,7 @@ class FingerboardView
         .select \.scale-degree .text ({pitch}) -> ScaleDegreeNames[pitch_class pitch - tonic]
 
   update_instrument: ->
-    string_pitches = Instruments[State.instrument_name]
+    string_pitches = State.instrument.string_pitches
     scale_tonic_name = State.scale_tonic_name
     pitch_name_options = if scale_tonic_name == /b/ then {+sharp} else {+flat}
     select_pitch_name_component = (component) -> ({pitch}) ->
@@ -306,8 +313,7 @@ class FingerboardView
       | \base => name.replace /(.).*/ '$1'
       | \accidental => name.replace /^./ ''
 
-    @d3_notes.each (note) ->
-      {string_number, fret_number, pitch} = note
+    @d3_notes.each ({string_number, fret_number, pitch}:note) ->
       note.pitch = pitch_class string_pitches[string_number] + fret_number
       note_label = d3.select this .select \.note
       note_label.select \.base .text select_pitch_name_component \base
@@ -365,7 +371,7 @@ class NoteGridView
     setTimeout (-> selection.classed \animate true), 1
 
   update_note_colors: ->
-    scale_pitches = Scales[State.scale_class_name].pitches
+    scale_pitches = State.scale.pitches
 
     @selection.selectAll \.scale-degree
       .classed \chromatic ({scale_degree}) -> scale_degree not in scale_pitches
@@ -375,7 +381,7 @@ class NoteGridView
   update: ->
     @update_note_colors!
     scale_tonic = State.scale_tonic_pitch
-    bass_pitch = Instruments[State.instrument_name].0
+    bass_pitch = State.instrument.string_pitches.0
     pos = $('#fingerboard').offset!
     pos.left -= @style.string_width * pitch_class((scale_tonic - bass_pitch) * 5)
     # FIXME why the fudge factors?
@@ -390,7 +396,7 @@ d3.select(\#scale-notes).call NoteGridView, FingerboardStyle
 $('#instruments .btn').click ->
   $('#instruments .btn').removeClass \btn-default
   $(@).addClass \btn-default
-  State.instrument_name = $(@).text!
+  State.instrument = Instruments[$(@).text!]
   D3State.instrument!
 
 $('#fingerings .btn').click ->
