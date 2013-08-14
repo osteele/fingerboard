@@ -1,6 +1,6 @@
 const SharpNoteNames = <[ C C# D D# E F F# G G# A A# B ]>
 const FlatNoteNames = <[ C Db D Eb E F Gb G Ab A Bb B ]>
-const ScaleDegreeNames = <[ 1 2b 2 3b 3 4 5b 5 6b 6 7b 7 ]>.map (.replace /(\d)/ '$1\u0302' .replace /b/g '\u266D')
+const ScaleDegreeNames = <[ 1 b2 2 b3 3 4 b5 5 b6 6 b7 7 ]> .map (.replace /(\d)/ '$1\u0302' .replace /b/g '\u266D')
 
 const Scales =
   * name: 'Diatonic Major'
