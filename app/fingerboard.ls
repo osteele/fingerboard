@@ -24,7 +24,8 @@ const Scales =
   * name: 'Octatonic'
     pitches: [0 2 3 5 6 8 9 11]
 
-for scale in Scales then Scales[scale.name] = scale
+do ->
+  for scale in Scales then Scales[scale.name] = scale
 
 pitch_name_to_number = (pitch_name) ->
   pitch = FlatNoteNames.indexOf pitch_name
@@ -38,6 +39,7 @@ const Instruments =
 
 State =
   instrument_name: \Violin
+  scale: Scales.0
   scale_tonic_name: \C
   scale_tonic_pitch: 0
   scale_class_name: 'Diatonic Major'
@@ -145,6 +147,7 @@ class KeyboardView
 class ScaleSelectorView
   (selection, style) ~>
     onclick = (scale_name) ->
+      State.scale = Scales[scale_name]
       State.scale_class_name = scale_name
       D3State.scale!
 
@@ -208,16 +211,12 @@ class FingerboardView
     for string_number from 0 til StringCount
       for fret_number from 0 to FingerPositions
         pitch = pitch_at string_number, fret_number
-        note_name = pitch_name pitch .replace /(.)(.)/ '$1-$2'
         fingering_name = String Math.ceil(fret_number / 2)
-        scale_degree_name = ScaleDegreeNames[pitch]
         finger_positions.push {
           string_number
           fret_number
           pitch
-          note_name
           fingering_name
-          scale_degree_name
         }
 
     root = selection
@@ -267,21 +266,19 @@ class FingerboardView
     @d3_notes.append \text
       .classed \scale-degree true
       .attr y: 7
-      .text (.scale_degree_name)
 
     D3State.on \instrument.fingerboard ~> @update_instrument!
     D3State.on \note_label ~> @update!
     D3State.on \scale.fingerboard ~> @update!
     D3State.on \scale_tonic.fingerboard ~> @update!
 
-    @update!
+    @update_instrument!
 
   update: ->
-    scale_tonic_name = State.scale_tonic_name
     scale_tonic = State.scale_tonic_pitch
-    scale = Scales[State.scale_class_name]
+    scale = State.scale
     scale_pitches = [pitch_class(pitch + scale_tonic) for pitch in scale.pitches]
-    tonic = scale_pitches[0]
+    tonic = scale_pitches.0
 
     State.note_label or= \notes
     for k in @label_sets
@@ -289,34 +286,41 @@ class FingerboardView
       labels = d3.select \#fingerboard .selectAll '.' + k.replace /s$/ ''
       labels.attr \visibility (if visible then 'inherit' else 'hidden')
 
-    pitch_name_options = {+sharp}
-    pitch_name_options = {+flat} if scale_tonic_name == /b/
-
-    @d3_notes.each ({pitch, circle}) ->
+    @d3_notes.each ({pitch}) ->
       scale_degree = pitch_class pitch - tonic
+      # d3.select this .select \scale-degree .text 'x'
       note_label = d3.select this
         .classed \scale pitch in scale_pitches
         .classed \chromatic pitch not in scale_pitches
         .classed \root scale_degree == 0
         .classed \fifth scale_degree == 7
-        .select \.note
-      note_label.select \.base
-          .text ({pitch}) -> pitch_name pitch, pitch_name_options .replace /(.).*/ '$1'
-      note_label.select \.accidental
-          .text ({pitch}) -> pitch_name pitch, pitch_name_options .replace /^./ ''
+        .select \.scale-degree .text ({pitch}) -> ScaleDegreeNames[pitch_class pitch - tonic]
 
   update_instrument: ->
     string_pitches = Instruments[State.instrument_name]
+    scale_tonic_name = State.scale_tonic_name
+    pitch_name_options = if scale_tonic_name == /b/ then {+sharp} else {+flat}
+    select_pitch_name_component = (component) -> ({pitch}) ->
+      name = pitch_name pitch, pitch_name_options
+      switch component
+      | \base => name.replace /(.).*/ '$1'
+      | \accidental => name.replace /^./ ''
+
     @d3_notes.each (note) ->
-      {string_number, fret_number} = note
+      {string_number, fret_number, pitch} = note
       note.pitch = pitch_class string_pitches[string_number] + fret_number
+      note_label = d3.select this .select \.note
+      note_label.select \.base .text select_pitch_name_component \base
+      note_label.select \.accidental .text select_pitch_name_component \accidental
     @update!
 
 
 class NoteGridView
-  (selection, style) ~>
-    const column_count = 12 * 5
-    const row_count = 12
+  (@selection, @style, @reference) ~>
+    selection = @selection
+    style = @style
+    column_count = style.columns ? 12 * 5
+    row_count = style.rows ? 12
 
     notes = [{column, row} for column in [0 til column_count] for row in [0 til row_count]]
     for note in notes then note.scale_degree = pitch_class note.column * 7 + note.row
@@ -325,7 +329,6 @@ class NoteGridView
       .entries notes
     for degree in degree_groups then degree.scale_degree = Number(degree.key)
 
-    @selection = selection
     @root = selection
       .append \svg
         .attr do
@@ -364,22 +367,19 @@ class NoteGridView
   update_note_colors: ->
     scale_pitches = Scales[State.scale_class_name].pitches
 
-    @root.selectAll \.scale-degree
+    @selection.selectAll \.scale-degree
       .classed \chromatic ({scale_degree}) -> scale_degree not in scale_pitches
       .classed \tonic ({scale_degree}) -> scale_degree in scale_pitches and scale_degree == 0
       .classed \fifth ({scale_degree}) -> scale_degree in scale_pitches and scale_degree == 7
 
   update: ->
     @update_note_colors!
-    style = FingerboardStyle
-    scale_pitches = Scales[State.scale_class_name].pitches
     scale_tonic = State.scale_tonic_pitch
-    bass_pitch = Instruments[State.instrument_name][0]
-    scale_pitches = [pitch_class pitch + scale_tonic - bass_pitch for pitch in scale_pitches]
+    bass_pitch = Instruments[State.instrument_name].0
     pos = $('#fingerboard').offset!
-    pos.left -= style.string_width * pitch_class(scale_pitches[0] * 5)
+    pos.left -= @style.string_width * pitch_class((scale_tonic - bass_pitch) * 5)
     # FIXME why the fudge factors?
-    # FIXME why doesn't work: @selection.attr
+    # FIXME why doesn't work?: @selection.attr
     @selection.each -> $(this).css left: pos.left + 1, top: pos.top + 1
 
 d3.select(\#fingerboard).call FingerboardView, FingerboardStyle
