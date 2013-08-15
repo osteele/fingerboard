@@ -96,9 +96,13 @@ pitch_name = (pitch, options={}) ->
     name = "#{flatName}/\n#{sharpName}"
   name.replace /b/ '\u266D' .replace /#/g '\u266F'
 
+d3.{}music.keyboard = (attributes) ->
+  style = attributes
+  tonic = 'C'
+  dispatcher = keyboard.dispatcher = d3.dispatch \tonic, \update
+  keyboard.update = -> dispatcher.update!
 
-class KeyboardView
-  (selection, style) ~>
+  function keyboard selection
     keys = Pitches.map (pitch) ->
       is_black_key = FlatNoteNames[pitch].length > 1
       note_name = pitch_name pitch, flat: true
@@ -120,8 +124,8 @@ class KeyboardView
         height: style.white_key.height + 1
 
     onclick = ({pitch, name}) ->
-      State.scale_tonic_name = FlatNoteNames[pitch]
-      D3State.scale_tonic!
+      tonic := FlatNoteNames[pitch]
+      dispatcher.tonic tonic
 
     key_views = root.selectAll \.piano-key
       .data(keys).enter!
@@ -129,7 +133,7 @@ class KeyboardView
           .classed \piano-key true
           .classed \black-key (.is_black_key)
           .classed \white-key -> (not it.is_black_key)
-          .on \click onclick
+          .on \click, onclick
 
     key_views.append \rect
       .attr do
@@ -146,10 +150,12 @@ class KeyboardView
 
     update = ->
       key_views
-        .classed \root, ({pitch}) -> pitch == State.scale_tonic_pitch
+        .classed \root, ({pitch}) -> pitch == pitch_name_to_number(tonic)
 
-    D3State.on \scale_tonic.keyboard -> update!
+    dispatcher.on \update -> update!
     update!
+
+  return keyboard
 
 
 class ScaleSelectorView
@@ -389,7 +395,13 @@ class NoteGridView
     @selection.each -> $(this).css left: pos.left + 1, top: pos.top + 1
 
 d3.select(\#fingerboard).call FingerboardView, FingerboardStyle
-d3.select(\#keyboard).call KeyboardView, KeyboardStyle
+
+keyboard = d3.music.keyboard(KeyboardStyle)
+keyboard.dispatcher.on \tonic, (tonic) ->
+  State.scale_tonic_name = tonic
+  D3State.scale_tonic!
+d3.select(\#keyboard).call keyboard
+
 d3.select(\#scales).call ScaleSelectorView, ScaleStyle
 d3.select(\#scale-notes).call NoteGridView, FingerboardStyle
 
