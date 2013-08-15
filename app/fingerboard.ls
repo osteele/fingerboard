@@ -158,15 +158,22 @@ d3.{}music.keyboard = (attributes) ->
   return keyboard
 
 
-class ScaleSelectorView
-  (selection, style) ~>
-    onclick = (scale_name) ->
-      State.scale = Scales[scale_name]
-      D3State.scale!
+d3.{}music.scales = (attributes) ->
+  style = attributes
+  my.scales = Scales
+  my.scale = Scales.0
+  my.dispatcher = d3.dispatch \scale
 
-    @scales = scales = selection
+  function my selection
+    onclick = (scale_name) ->
+      scale = my.scales[scale_name]
+      my.scale = scale
+      my.dispatcher.scale scale
+      update!
+
+    scales = selection
       .selectAll \.scale
-      .data Scales.map (.name)
+      .data my.scales.map (.name)
       .enter!
         .append \div
           .classed \scale true
@@ -181,7 +188,7 @@ class ScaleSelectorView
         .attr transform: "translate(#{pc_width / 2}, #{pc_width / 2})"
 
     scales.selectAll 'svg g' .each (scale_name) ->
-      pitches = Scales[scale_name].pitches
+      pitches = my.scales[scale_name].pitches
       r = style.pitch_circle.radius
       endpoints = Pitches.map (pitch) ->
         a = (pitch - 3) * 2 * Math.PI / 12
@@ -210,9 +217,8 @@ class ScaleSelectorView
             .attr \r style.pitch_circle.note.radius
 
     update = ->
-      scales.classed 'selected', -> it == State.scale.name
+      scales.classed 'selected', (== my.scale.name)
 
-    D3State.on \scale.scale ~> update!
     update!
 
 
@@ -396,13 +402,18 @@ class NoteGridView
 
 d3.select(\#fingerboard).call FingerboardView, FingerboardStyle
 
-keyboard = d3.music.keyboard(KeyboardStyle)
+keyboard = d3.music.keyboard KeyboardStyle
 keyboard.dispatcher.on \tonic, (tonic) ->
   State.scale_tonic_name = tonic
   D3State.scale_tonic!
 d3.select(\#keyboard).call keyboard
 
-d3.select(\#scales).call ScaleSelectorView, ScaleStyle
+scales = d3.music.scales ScaleStyle
+scales.dispatcher.on \scale, (scale) ->
+  State.scale = scale
+  D3State.scale!
+d3.select(\#scales).call scales
+
 d3.select(\#scale-notes).call NoteGridView, FingerboardStyle
 
 $('#instruments .btn').click ->
