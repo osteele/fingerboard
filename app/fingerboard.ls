@@ -126,7 +126,7 @@ d3.{}music.keyboard = (attributes) ->
     onclick = ({pitch, name}) ->
       my.tonic = FlatNoteNames[pitch]
       update!
-      my.dispatcher.tonic tonic
+      my.dispatcher.tonic my.tonic
 
     key_views = root.selectAll \.piano-key
       .data(keys).enter!
@@ -229,7 +229,7 @@ d3.{}music.fingerboard = (attributes) ->
   my.note_label = \notes
   my.scale = 'C'
   my.scale_tonic_pitch = 0
-  my.dispatcher = d3.dispatch \instrument \note_label \scale \scale_tonic
+  my.dispatcher = d3.dispatch \update
 
   function my selection
     my.label_sets = <[ notes fingerings scale-degrees ]>
@@ -294,11 +294,7 @@ d3.{}music.fingerboard = (attributes) ->
       .classed \scale-degree true
       .attr y: 7
 
-    my.dispatcher.on \instrument.fingerboard -> my.update_instrument!
-    my.dispatcher.on \note_label -> my.update!
-    my.dispatcher.on \scale.fingerboard -> my.update!
-    my.dispatcher.on \scale_tonic.fingerboard -> my.update!
-
+    my.dispatcher.on \update -> my.update!
     my.update_instrument!
 
   my.update = ->
@@ -343,27 +339,26 @@ d3.{}music.fingerboard = (attributes) ->
   return my
 
 
-class NoteGridView
-  (@selection, @style, @reference) ~>
-    selection = @selection
-    style = @style
-    column_count = style.columns ? 12 * 5
-    row_count = style.rows ? 12
+note-grid-view = (style, reference) ->
+  my.column_count = style.columns ? 12 * 5
+  my.row_count = style.rows ? 12
 
-    notes = [{column, row} for column in [0 til column_count] for row in [0 til row_count]]
+  function my selection
+    my.selection = selection
+    notes = [{column, row} for column in [0 til my.column_count] for row in [0 til my.row_count]]
     for note in notes then note.scale_degree = pitch_class note.column * 7 + note.row
     degree_groups = d3.nest!
       .key (.scale_degree)
       .entries notes
     for degree in degree_groups then degree.scale_degree = Number(degree.key)
 
-    @root = selection
+    root = selection
       .append \svg
         .attr do
-          width: column_count * style.string_width
-          height: row_count * style.fret_height
+          width: my.column_count * style.string_width
+          height: my.row_count * style.fret_height
 
-    @note_views = @root.selectAll \.scale-degree
+    note_views = root.selectAll \.scale-degree
       .data degree_groups
       .enter!
         .append \g
@@ -378,37 +373,39 @@ class NoteGridView
                   y = row * style.fret_height + style.note_radius
                   "translate(#{x}, #{y})"
 
-    @note_views.append \circle
+    note_views.append \circle
       .attr r: style.note_radius
-    @note_views.append \text
+    note_views.append \text
       .attr y: 7
       .text -> ScaleDegreeNames[it.scale_degree]
 
-    D3State.on 'instrument.note_grid' ~> @update!
-    D3State.on 'scale.note_grid' ~> @update!
-    D3State.on 'scale_tonic.note_grid' ~> @update!
+    D3State.on 'instrument.note_grid' -> update!
+    D3State.on 'scale.note_grid' -> update!
+    D3State.on 'scale_tonic.note_grid' -> update!
 
-    @update!
+    update!
 
     setTimeout (-> selection.classed \animate true), 1
 
-  update_note_colors: ->
+  function update_note_colors
     scale_pitches = State.scale.pitches
 
-    @selection.selectAll \.scale-degree
+    my.selection.selectAll \.scale-degree
       .classed \chromatic ({scale_degree}) -> scale_degree not in scale_pitches
       .classed \tonic ({scale_degree}) -> scale_degree in scale_pitches and scale_degree == 0
       .classed \fifth ({scale_degree}) -> scale_degree in scale_pitches and scale_degree == 7
 
-  update: ->
-    @update_note_colors!
+  function update
+    update_note_colors!
     scale_tonic = State.scale_tonic_pitch
     bass_pitch = State.instrument.string_pitches.0
     pos = $('#fingerboard').offset!
-    pos.left -= @style.string_width * pitch_class((scale_tonic - bass_pitch) * 5)
+    pos.left -= style.string_width * pitch_class((scale_tonic - bass_pitch) * 5)
     # FIXME why the fudge factors?
     # FIXME why doesn't work?: @selection.attr
-    @selection.each -> $(this).css left: pos.left + 1, top: pos.top + 1
+    my.selection.each -> $(this).css left: pos.left + 1, top: pos.top + 1
+
+  return my
 
 fingerboard = d3.music.fingerboard FingerboardStyle
 fingerboard.instrument = State.instrument
@@ -418,16 +415,16 @@ fingerboard.scale_tonic_pitch = State.scale_tonic_pitch
 d3.select(\#fingerboard).call fingerboard
 D3State.on \instrument.fingerboard, ->
   fingerboard.instrument = State.instrument
-  fingerboard.dispatcher.instrument!
+  fingerboard.dispatcher.update!
 D3State.on \note_label.fingerboard, ->
   fingerboard.note_label = State.note_label
-  fingerboard.dispatcher.note_label!
+  fingerboard.dispatcher.update!
 D3State.on \scale.fingerboard, ->
   fingerboard.scale = State.scale
-  fingerboard.dispatcher.scale!
+  fingerboard.dispatcher.update!
 D3State.on \scale_tonic.fingerboard, ->
-  fingerboard.scale_tonic = State.scale_tonic
-  fingerboard.dispatcher.scale_tonic!
+  fingerboard.scale_tonic_pitch = State.scale_tonic_pitch
+  fingerboard.dispatcher.update!
 
 keyboard = d3.music.keyboard KeyboardStyle
 # TODO keyboard.tonic =
@@ -442,7 +439,8 @@ scales.dispatcher.on \scale, (scale) ->
   State.scale = scale
   D3State.scale!
 
-d3.select(\#scale-notes).call NoteGridView, FingerboardStyle
+grid-view = note-grid-view FingerboardStyle, $('#fingerboard')
+d3.select(\#scale-notes).call grid-view
 
 $('#instruments .btn').click ->
   $('#instruments .btn').removeClass \btn-default
