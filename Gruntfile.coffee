@@ -40,8 +40,11 @@ module.exports = (grunt) ->
         src: 'release'
     jade:
       debug:
-        files:
-          'build/index.html': 'app/views/index.jade'
+        expand: true
+        cwd: 'app/views'
+        src: '*.jade'
+        dest: 'build'
+        ext: '.html'
         options:
           pretty: true
           data:
@@ -73,7 +76,7 @@ module.exports = (grunt) ->
         files: ['app/**/main.scss']
         tasks: ['sass:debug']
       jade:
-        files: ['app/**/index.jade']
+        files: ['app/**/*.jade']
         tasks: ['jade:debug']
       scripts:
         files: ['**/*.ls']
