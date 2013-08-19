@@ -57,30 +57,21 @@ State =
 const StringCount = 4
 const FingerPositions = 7
 
-const FingerboardStyle =
-  string_width: 50
-  fret_height: 50
-  note_radius: 20
+const Style =
+  fingerboard:
+    string_width: 50
+    fret_height: 50
+    note_radius: 20
 
-const KeyboardStyle =
-  key:
-    width: 25
-    h_margin: 3
-  white_key:
-    height: 120
-  black_key:
-    height: 90
+  keyboard:
+    key_width: 25
+    key_spacing: 3
+    white_key_height: 120
+    black_key_height: 90
 
-const ScaleStyle =
-  cols: 4
-  cell:
-    width: 85
-    height: 90
-    padding: 0
-  pitch_circle:
-    radius: 28
-    note:
-      radius: 3
+  scales:
+    constellation_radius: 28
+    pitch_radius: 3
 
 const Pitches = [0 til 12]
 
@@ -98,9 +89,9 @@ pitch_name = (pitch, options={}) ->
     name = "#{flatName}/\n#{sharpName}"
   name.replace /b/ '\u266D' .replace /#/g '\u266F'
 
-d3.{}music.keyboard = (attributes) ->
+d3.{}music.keyboard = (model, attributes) ->
   style = attributes
-  my.tonic = 'C'
+  key_count = 7
   my.dispatcher = d3.dispatch \tonic, \update
   my.update = -> my.dispatcher.update!
 
@@ -108,27 +99,27 @@ d3.{}music.keyboard = (attributes) ->
     keys = Pitches.map (pitch) ->
       is_black_key = FlatNoteNames[pitch].length > 1
       note_name = pitch_name pitch, flat: true
-      {height, width} = style.key with (if is_black_key then style.black_key else style.white_key)
-      return {pitch, name: note_name, is_black_key, attrs: {width, height, y: 0}}
+      height = (if is_black_key then style.black_key_height else style.white_key_height)
+      return {pitch, name: note_name, is_black_key, attrs: {width: style.key_width, height, y: 0}}
 
     x = 1
     for {{width}:attrs, is_black_key} in keys
       attrs.x = x
       attrs.x -= width / 2 if is_black_key
-      x += width + style.key.h_margin unless is_black_key
+      x += width + style.key_spacing unless is_black_key
 
     # order the black keys on top of (following) the while keys
     keys.sort (a, b) -> a.is_black_key - b.is_black_key
 
     root = selection.append \svg
       .attr do
-        width: 7 * (style.key.width + style.key.h_margin)
-        height: style.white_key.height + 1
+        width: key_count * (style.key_width + style.key_spacing)
+        height: style.white_key_height + 1
 
     onclick = ({pitch, name}) ->
-      my.tonic = FlatNoteNames[pitch]
+      model.tonic = FlatNoteNames[pitch]
       update!
-      my.dispatcher.tonic my.tonic
+      my.dispatcher.tonic model.tonic
 
     key_views = root.selectAll \.piano-key
       .data(keys).enter!
@@ -153,7 +144,7 @@ d3.{}music.keyboard = (attributes) ->
 
     update = ->
       key_views
-        .classed \root, ({pitch}) -> pitch == pitch_name_to_number(my.tonic)
+        .classed \root, ({pitch}) -> pitch == model.scale_tonic_pitch
 
     my.dispatcher.on \update -> update!
     update!
@@ -165,8 +156,8 @@ d3.{}music.pitch-constellation = (pitches, attributes) ->
   style = attributes
 
   (selection) ->
-    r = style.pitch_circle.radius
-    note_radius = style.pitch_circle.note.radius
+    r = style.constellation_radius
+    note_radius = style.pitch_radius
     pc_width = 2 * (r + note_radius + 1)
 
     root = selection.append \svg
@@ -201,17 +192,14 @@ d3.{}music.pitch-constellation = (pitches, attributes) ->
           .attr \r note_radius
 
 
-d3.{}music.fingerboard = (attributes) ->
+d3.{}music.fingerboard = (model, attributes) ->
   style = attributes
-  my.instrument = Instruments.Violin
-  my.note_label = \notes
-  my.scale = 'C'
-  my.scale_tonic_pitch = 0
+  label_sets = <[ notes fingerings scale-degrees ]>
   my.dispatcher = d3.dispatch \update
+  d3_notes = null
+  note_label = null
 
   function my selection
-    my.label_sets = <[ notes fingerings scale-degrees ]>
-
     finger_positions = []
     for string_number from 0 til StringCount
       for fret_number from 0 to FingerPositions
@@ -248,7 +236,7 @@ d3.{}music.fingerboard = (attributes) ->
             transform: -> "translate(#{(it + 0.5) * style.string_width}, 0)"
 
     # notes
-    my.d3_notes = root.selectAll \.finger-position
+    d3_notes := root.selectAll \.finger-position
       .data finger_positions
       .enter!
         .append \g
@@ -258,36 +246,38 @@ d3.{}music.fingerboard = (attributes) ->
             dy = fret_number * style.fret_height + style.note_radius + 1
             "translate(#{dx}, #{dy})"
 
-    my.d3_notes.append \circle
+    d3_notes.append \circle
       .attr r: style.note_radius
 
-    note_labels = my.d3_notes.append \text .classed \note true .attr y: 7
+    note_labels = d3_notes.append \text .classed \note true .attr y: 7
     note_labels.append \tspan .classed \base true
     note_labels.append \tspan .classed \accidental true
-    my.d3_notes.append \text
+    d3_notes.append \text
       .classed \fingering true
       .attr y: 7
       .text (.fingering_name)
-    my.d3_notes.append \text
+    d3_notes.append \text
       .classed \scale-degree true
       .attr y: 7
 
     my.dispatcher.on \update -> my.update!
-    my.update_instrument!
+    my.update!
 
   my.update = ->
-    scale_tonic = my.scale_tonic_pitch
-    scale = my.scale
+    update_instrument!
+
+    scale_tonic = model.scale_tonic_pitch
+    scale = model.scale
     scale_pitches = [pitch_class(pitch + scale_tonic) for pitch in scale.pitches]
     tonic = scale_pitches.0
 
-    my.note_label or= \notes
-    for k in my.label_sets
-      visible = k == my.note_label.replace /_/g '-'
+    note_label := note_label or \notes
+    for k in label_sets
+      visible = k == note_label.replace /_/g '-'
       labels = d3.select \#fingerboard .selectAll '.' + k.replace /s$/ ''
       labels.attr \visibility (if visible then 'inherit' else 'hidden')
 
-    my.d3_notes.each ({pitch}) ->
+    d3_notes.each ({pitch}) ->
       scale_degree = pitch_class pitch - tonic
       # d3.select this .select \scale-degree .text 'x'
       note_label = d3.select this
@@ -297,9 +287,9 @@ d3.{}music.fingerboard = (attributes) ->
         .classed \fifth scale_degree == 7
         .select \.scale-degree .text ({pitch}) -> ScaleDegreeNames[pitch_class pitch - tonic]
 
-  my.update_instrument = ->
-    string_pitches = my.instrument.string_pitches
-    scale_tonic_name = my.scale_tonic_name
+  update_instrument = ->
+    string_pitches = model.instrument.string_pitches
+    scale_tonic_name = model.scale_tonic_name
     pitch_name_options = if scale_tonic_name == /b/ then {+sharp} else {+flat}
     select_pitch_name_component = (component) -> ({pitch}) ->
       name = pitch_name pitch, pitch_name_options
@@ -307,25 +297,23 @@ d3.{}music.fingerboard = (attributes) ->
       | \base => name.replace /(.).*/ '$1'
       | \accidental => name.replace /^./ ''
 
-    my.d3_notes.each ({string_number, fret_number, pitch}:note) ->
+    d3_notes.each ({string_number, fret_number, pitch}:note) ->
       note.pitch = pitch_class string_pitches[string_number] + fret_number
       note_label = d3.select this .select \.note
       note_label.select \.base .text select_pitch_name_component \base
       note_label.select \.accidental .text select_pitch_name_component \accidental
-    my.update!
 
   return my
 
 
-note-grid-view = (style, reference) ->
-  my.column_count = style.columns ? 12 * 5
-  my.row_count = style.rows ? 12
-  my.scale = Scales.0
-  my.instrument = Instruments.Violin
+d3.music.note-grid = (model, style, referenceElement) ->
+  column_count = style.columns ? 12 * 5
+  row_count = style.rows ? 12
+  selection = null
 
-  function my selection
-    my.selection = selection
-    notes = [{column, row} for column in [0 til my.column_count] for row in [0 til my.row_count]]
+  function my _selection
+    selection := _selection
+    notes = [{column, row} for column in [0 til column_count] for row in [0 til row_count]]
     for note in notes then note.scale_degree = pitch_class note.column * 7 + note.row
     degree_groups = d3.nest!
       .key (.scale_degree)
@@ -335,8 +323,8 @@ note-grid-view = (style, reference) ->
     root = selection
       .append \svg
         .attr do
-          width: my.column_count * style.string_width
-          height: my.row_count * style.fret_height
+          width: column_count * style.string_width
+          height: row_count * style.fret_height
 
     note_views = root.selectAll \.scale-degree
       .data degree_groups
@@ -364,22 +352,22 @@ note-grid-view = (style, reference) ->
     setTimeout (-> selection.classed \animate true), 1
 
   function update_note_colors
-    scale_pitches = my.scale.pitches
+    scale_pitches = model.scale.pitches
 
-    my.selection.selectAll \.scale-degree
+    selection.selectAll \.scale-degree
       .classed \chromatic ({scale_degree}) -> scale_degree not in scale_pitches
       .classed \tonic ({scale_degree}) -> scale_degree in scale_pitches and scale_degree == 0
       .classed \fifth ({scale_degree}) -> scale_degree in scale_pitches and scale_degree == 7
 
   my.update = ->
     update_note_colors!
-    scale_tonic = my.scale_tonic_pitch
-    bass_pitch = my.instrument.string_pitches.0
-    pos = $('#fingerboard').offset!
+    scale_tonic = model.scale_tonic_pitch
+    bass_pitch = model.instrument.string_pitches.0
+    pos = referenceElement.offset!
     pos.left -= style.string_width * pitch_class((scale_tonic - bass_pitch) * 5)
     # FIXME why the fudge factors?
     # FIXME why doesn't work?: @selection.attr
-    my.selection.each -> $(this).css left: pos.left + 1, top: pos.top + 1
+    selection.each -> $(this).css left: pos.left + 1, top: pos.top + 1
 
   return my
 
@@ -395,13 +383,9 @@ module = angular.module 'FingerboardScales', []
   $scope.scale_tonic_pitch = 0
   $scope.setScale = (s) -> $scope.scale = s
 
-  grid-view = note-grid-view FingerboardStyle, $('#fingerboard')
-  d3.select(\#scale-notes).call grid-view
-  $scope.$watch ->
-    grid-view.instrument = $scope.instrument
-    grid-view.scale = $scope.scale
-    grid-view.scale_tonic_pitch = $scope.scale_tonic_pitch
-    grid-view.update!
+  note-grid = d3.music.note-grid $scope, Style.fingerboard, $('#fingerboard')
+  d3.select(\#scale-notes).call note-grid
+  $scope.$watch -> note-grid.update!
 
   $('#instruments .btn').click ->
     $('#instruments .btn').removeClass \btn-default
@@ -420,17 +404,9 @@ module = angular.module 'FingerboardScales', []
 module.directive 'fingerboard', ->
   restrict: 'CE'
   link: (scope, element, attrs) ->
-    fingerboard = d3.music.fingerboard FingerboardStyle
-    update_state = ->
-      fingerboard.instrument = scope.instrument
-      fingerboard.note_label = scope.note_label
-      fingerboard.scale = scope.scale
-      fingerboard.scale_tonic_pitch = scope.scale_tonic_pitch
-    update_state!
+    fingerboard = d3.music.fingerboard scope, Style.fingerboard
     d3.select(element.context).call fingerboard
-    scope.$watch ->
-      update_state!
-      fingerboard.update_instrument!
+    scope.$watch -> fingerboard.update!
 
 module.directive 'pitchConstellation', ->
   restrict: 'CE'
@@ -438,13 +414,13 @@ module.directive 'pitchConstellation', ->
   scope: {pitches: '=pitches'}
   transclude: true
   link: (scope, element, attrs) ->
-    constellation = d3.music.pitch-constellation scope.pitches, ScaleStyle
+    constellation = d3.music.pitch-constellation scope.pitches, Style.scales
     d3.select(element.context).call constellation
 
 module.directive 'keyboard', ->
   restrict: 'CE'
   link: (scope, element, attrs) ->
-    keyboard = d3.music.keyboard KeyboardStyle
+    keyboard = d3.music.keyboard scope, Style.keyboard
     d3.select(element.context).call keyboard
     keyboard.dispatcher.on \tonic, (tonic_name) ->
       scope.$apply ->
