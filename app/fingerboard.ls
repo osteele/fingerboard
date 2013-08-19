@@ -392,10 +392,14 @@ module = angular.module 'FingerboardScales', []
   $scope.scale_tonic_name = \C
   $scope.scale_tonic_pitch = 0
   $scope.setScale = (s) -> $scope.scale = s
+  $scope.hover = {}
   $scope.bodyClassNames = ->
     tonic = $scope.scale_tonic_pitch
-    classes = ["scale-includes-#{pitch_class(n + tonic)}" for n in $scope.scale.pitches]
-    classes.push "hover-scale-note-#{pitch_class($scope.hover_pitch - tonic)}" if $scope.hover_pitch >= 0
+    tonic = $scope.hover.scale_tonic_pitch if $scope.hover?scale_tonic_pitch
+    classes = []
+    classes ++= ["scale-includes-#{pitch_class(n + tonic)}" for n in $scope.scale.pitches] unless $scope.hover?pitches
+    classes ++= ["scale-includes-#{pitch_class(n + tonic)}" for n in $scope.hover.pitches] if $scope.hover?pitches
+    classes.push "hover-scale-note-#{pitch_class($scope.hover_pitch - tonic)}" if $scope?hover_pitch
     classes
 
   note-grid = d3.music.note-grid $scope, Style.fingerboard, $('#fingerboard')
@@ -430,7 +434,7 @@ module.directive 'fingerboard', ->
 module.directive 'pitchConstellation', ->
   restrict: 'CE'
   replace: true
-  scope: {pitches: '=pitches'}
+  scope: {pitches: '=', hover: '='}
   transclude: true
   link: (scope, element, attrs) ->
     constellation = d3.music.pitch-constellation scope.pitches, Style.scales
@@ -447,5 +451,7 @@ module.directive 'keyboard', ->
         scope.scale_tonic_pitch = pitch_name_to_number(tonic_name)
     keyboard.dispatcher.on \mouseover, (pitch) ->
       scope.$apply -> scope.hover_pitch = pitch
+      scope.$apply -> scope.hover.scale_tonic_pitch = pitch
     keyboard.dispatcher.on \mouseout, ->
       scope.$apply -> scope.hover_pitch = null
+      scope.$apply -> scope.hover.scale_tonic_pitch = null

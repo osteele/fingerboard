@@ -41,7 +41,8 @@ html(lang="en", ng-app="FingerboardScales")
     .module.panel
       h2.panel-title Scale Class
       #scales
-        .scale(ng-repeat="s in scales", ng-class="{selected: s == scale}", ng-click="setScale(s)")
+        .scale(ng-repeat="s in scales", ng-class="{selected: s == scale}", ng-click="setScale(s)",
+            ng-mouseover="hover.pitches = s.pitches", ng-mouseout="hover.pitches = null")
           h3 {{s.name}}
           pitch-constellation(pitches="s.pitches")
 
