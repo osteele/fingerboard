@@ -212,19 +212,31 @@ svg text {
     fill: $root-color !important;
   }
 
-  &:hover rect {
-    fill: gray;
+  &:hover rect, &.root:hover rect {
+    fill: gray !important;
     @include vendor-prefix(transition, fill 0.2s);
   }
 }
 
 @for $i from 0 through 11 {
-  .scale-includes-#{$i} .scale-note-#{$i}.white-key rect {
+  body.scale-includes-#{$i} .scale-note-#{$i}.white-key rect {
     fill: lighten(green, 65%) !important;
   }
 
-  .scale-includes-#{$i} .scale-note-#{$i}.black-key rect {
+  body.scale-includes-#{$i} .scale-note-#{$i}.black-key rect {
     fill: darken(green, 10%) !important;
+  }
+
+  body.hover-scale-note-#{$i} .scale .scale-note-#{$i} {
+    stroke-width: 2px;
+  }
+
+  body.hover-scale-note-#{$i} #fingerboard .finger-position.scale-note-#{$i} {
+    stroke-width: 4px;
+  }
+
+  body.hover-scale-note-#{$i} #keyboard .scale-note-#{$i} {
+    stroke-width: 3px;
   }
 }
 

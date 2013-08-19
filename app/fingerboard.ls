@@ -92,8 +92,8 @@ pitch_name = (pitch, options={}) ->
 d3.{}music.keyboard = (model, attributes) ->
   style = attributes
   key_count = 7
-  my.dispatcher = d3.dispatch \tonic, \update
-  my.update = -> my.dispatcher.update!
+  my.dispatcher = dispatcher = d3.dispatch \mouseover \mouseout \tonic \update
+  my.update = -> dispatcher.update!
 
   function my selection
     keys = Pitches.map (pitch) ->
@@ -120,7 +120,7 @@ d3.{}music.keyboard = (model, attributes) ->
       model.scale_tonic_name = FlatNoteNames[pitch]
       model.scale_tonic_pitch = pitch
       update!
-      my.dispatcher.tonic model.scale_tonic_name
+      dispatcher.tonic model.scale_tonic_name
 
     key_views = root.selectAll \.piano-key
       .data(keys).enter!
@@ -128,8 +128,10 @@ d3.{}music.keyboard = (model, attributes) ->
           .attr \class -> "scale-note-#{it.pitch}"
           .classed \piano-key true
           .classed \black-key (.is_black_key)
-          .classed \white-key -> (not it.is_black_key)
+          .classed \white-key, -> (not it.is_black_key)
           .on \click, onclick
+          .on \mouseover, -> dispatcher.mouseover it.pitch
+          .on \mouseout, -> dispatcher.mouseout it.pitch
 
     key_views.append \rect
       .attr do
@@ -148,7 +150,7 @@ d3.{}music.keyboard = (model, attributes) ->
       key_views
         .classed \root, ({pitch}) -> pitch == model.scale_tonic_pitch
 
-    my.dispatcher.on \update -> update!
+    dispatcher.on \update -> update!
     update!
 
   return my
@@ -186,6 +188,7 @@ d3.{}music.pitch-constellation = (pitches, attributes) ->
       .data endpoints
       .enter!
         .append \circle
+          .attr \class -> "scale-note-#{it.pitch}"
           .classed \chromatic (.chromatic)
           .classed \root (.pitch == 0)
           .classed \fifth (.pitch == 7)
@@ -197,7 +200,7 @@ d3.{}music.pitch-constellation = (pitches, attributes) ->
 d3.{}music.fingerboard = (model, attributes) ->
   style = attributes
   label_sets = <[ notes fingerings scale-degrees ]>
-  my.dispatcher = d3.dispatch \update
+  my.dispatcher = dispatcher = d3.dispatch \mouseover \mouseout \update
   d3_notes = null
   note_label = null
 
@@ -247,6 +250,8 @@ d3.{}music.fingerboard = (model, attributes) ->
             dx = (string_number + 0.5) * style.string_width
             dy = fret_number * style.fret_height + style.note_radius + 1
             "translate(#{dx}, #{dy})"
+          .on \mouseover, -> dispatcher.mouseover it.pitch
+          .on \mouseout, -> dispatcher.mouseout it.pitch
 
     d3_notes.append \circle
       .attr r: style.note_radius
@@ -262,7 +267,7 @@ d3.{}music.fingerboard = (model, attributes) ->
       .classed \scale-degree true
       .attr y: 7
 
-    my.dispatcher.on \update -> my.update!
+    dispatcher.on \update -> my.update!
     my.update!
 
   my.update = ->
@@ -279,10 +284,13 @@ d3.{}music.fingerboard = (model, attributes) ->
       labels = d3.select \#fingerboard .selectAll '.' + k.replace /s$/ ''
       labels.attr \visibility (if visible then 'inherit' else 'hidden')
 
+    d3_notes.attr \class -> "scale-note-#{pitch_class it.pitch - tonic}"
+
     d3_notes.each ({pitch}) ->
       scale_degree = pitch_class pitch - tonic
       # d3.select this .select \scale-degree .text 'x'
       note_label = d3.select this
+        .classed \finger-position true
         .classed \scale pitch in scale_pitches
         .classed \chromatic pitch not in scale_pitches
         .classed \root scale_degree == 0
@@ -384,16 +392,15 @@ module = angular.module 'FingerboardScales', []
   $scope.scale_tonic_name = \C
   $scope.scale_tonic_pitch = 0
   $scope.setScale = (s) -> $scope.scale = s
+  $scope.bodyClassNames = ->
+    tonic = $scope.scale_tonic_pitch
+    classes = ["scale-includes-#{pitch_class(n + tonic)}" for n in $scope.scale.pitches]
+    classes.push "hover-scale-note-#{$scope.hover_pitch}" if $scope.hover_pitch >= 0
+    classes
 
   note-grid = d3.music.note-grid $scope, Style.fingerboard, $('#fingerboard')
   d3.select(\#scale-notes).call note-grid
   $scope.$watch -> note-grid.update!
-
-  $scope.$watch ->
-    tonic = $scope.scale_tonic_pitch
-    classes = document.body.className - /\bscale-includes-\d+\b/g - / +$/ + ' '
-    classes ++= ["scale-includes-#{pitch_class(n + tonic)}" for n in $scope.scale.pitches] * ' '
-    document.body.className = classes.replace(/  /, ' ')
 
   $('#instruments .btn').click ->
     $('#instruments .btn').removeClass \btn-default
@@ -415,6 +422,10 @@ module.directive 'fingerboard', ->
     fingerboard = d3.music.fingerboard scope, Style.fingerboard
     d3.select(element.context).call fingerboard
     scope.$watch -> fingerboard.update!
+    fingerboard.dispatcher.on \mouseover, (pitch) ->
+      scope.$apply -> scope.hover_pitch = pitch
+    fingerboard.dispatcher.on \mouseout, ->
+      scope.$apply -> scope.hover_pitch = null
 
 module.directive 'pitchConstellation', ->
   restrict: 'CE'
@@ -434,3 +445,7 @@ module.directive 'keyboard', ->
       scope.$apply ->
         scope.scale_tonic_name = tonic_name
         scope.scale_tonic_pitch = pitch_name_to_number(tonic_name)
+    keyboard.dispatcher.on \mouseover, (pitch) ->
+      scope.$apply -> scope.hover_pitch = pitch
+    keyboard.dispatcher.on \mouseout, ->
+      scope.$apply -> scope.hover_pitch = null

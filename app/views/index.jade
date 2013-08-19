@@ -18,7 +18,7 @@ html(lang="en", ng-app="FingerboardScales")
 
     script(src="./fingerboard.js", defer)
 
-  body(ng-controller="FingerboardScalesCtrl")
+  body(ng-controller="FingerboardScalesCtrl", ng-class="bodyClassNames()")
     h1
       | Fingerboard Scales
 
