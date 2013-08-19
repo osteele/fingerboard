@@ -395,7 +395,7 @@ module = angular.module 'FingerboardScales', []
   $scope.bodyClassNames = ->
     tonic = $scope.scale_tonic_pitch
     classes = ["scale-includes-#{pitch_class(n + tonic)}" for n in $scope.scale.pitches]
-    classes.push "hover-scale-note-#{$scope.hover_pitch}" if $scope.hover_pitch >= 0
+    classes.push "hover-scale-note-#{pitch_class($scope.hover_pitch - tonic)}" if $scope.hover_pitch >= 0
     classes
 
   note-grid = d3.music.note-grid $scope, Style.fingerboard, $('#fingerboard')

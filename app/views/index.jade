@@ -79,5 +79,13 @@ html(lang="en", ng-app="FingerboardScales")
           The favicon image is from a [sketch](http://openclipart.org/detail/4802/violin-by-papapishu)
           placed in the public domain by papapishu @ [Openclipart](http://openclipart.org).
 
+    svg#svg-effects
+      filter#hovered-scale-note
+        feColorMatrix(type="matrix", values="0 0 0 0 0   0 0 0 0.9 0   0 0 0 0.9 0   0 0 0 1 0")
+        feGaussianBlur(stdDeviation="5", result="coloredBlur")
+        feMerge
+          feMergeNode(in="coloredBlur")
+          feMergeNode(in="SourceGraphic")
+
     if debug
       script(src="http://localhost:35729/livereload.js")

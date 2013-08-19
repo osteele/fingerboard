@@ -229,14 +229,17 @@ svg text {
 
   body.hover-scale-note-#{$i} .scale .scale-note-#{$i} {
     stroke-width: 2px;
+    filter:url(#hovered-scale-note);
   }
 
   body.hover-scale-note-#{$i} #fingerboard .finger-position.scale-note-#{$i} {
-    stroke-width: 4px;
+    stroke-width: 2px;
+    filter:url(#hovered-scale-note);
   }
 
   body.hover-scale-note-#{$i} #keyboard .scale-note-#{$i} {
     stroke-width: 3px;
+    filter:url(#hovered-scale-note);
   }
 }
 
