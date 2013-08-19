@@ -117,13 +117,15 @@ d3.{}music.keyboard = (model, attributes) ->
         height: style.white_key_height + 1
 
     onclick = ({pitch, name}) ->
-      model.tonic = FlatNoteNames[pitch]
+      model.scale_tonic_name = FlatNoteNames[pitch]
+      model.scale_tonic_pitch = pitch
       update!
-      my.dispatcher.tonic model.tonic
+      my.dispatcher.tonic model.scale_tonic_name
 
     key_views = root.selectAll \.piano-key
       .data(keys).enter!
         .append \g
+          .attr \class -> "scale-note-#{it.pitch}"
           .classed \piano-key true
           .classed \black-key (.is_black_key)
           .classed \white-key -> (not it.is_black_key)
@@ -386,6 +388,12 @@ module = angular.module 'FingerboardScales', []
   note-grid = d3.music.note-grid $scope, Style.fingerboard, $('#fingerboard')
   d3.select(\#scale-notes).call note-grid
   $scope.$watch -> note-grid.update!
+
+  $scope.$watch ->
+    tonic = $scope.scale_tonic_pitch
+    classes = document.body.className - /\bscale-includes-\d+\b/g - / +$/ + ' '
+    classes ++= ["scale-includes-#{pitch_class(n + tonic)}" for n in $scope.scale.pitches] * ' '
+    document.body.className = classes.replace(/  /, ' ')
 
   $('#instruments .btn').click ->
     $('#instruments .btn').removeClass \btn-default

@@ -218,6 +218,16 @@ svg text {
   }
 }
 
+@for $i from 0 through 11 {
+  .scale-includes-#{$i} .scale-note-#{$i}.white-key rect {
+    fill: lighten(green, 65%) !important;
+  }
+
+  .scale-includes-#{$i} .scale-note-#{$i}.black-key rect {
+    fill: darken(green, 10%) !important;
+  }
+}
+
 #scales {
   background: white;
   border: 1px solid gray;
