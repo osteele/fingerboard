@@ -32,6 +32,10 @@ pitch_name_to_number = (pitch_name) ->
   pitch = SharpNoteNames.indexOf pitch_name unless pitch >= 0
   return pitch
 
+pitch_number_to_name = (pitch_number) ->
+  pitch = pitch_class(pitch_number)
+  SharpNoteNames.indexOf(pitch) or FlatNoteNames.indexOf(pitch)
+
 const Instruments =
   * name: 'Violin'
     string_pitches: [7 14 21 28]
@@ -49,8 +53,6 @@ State =
   scale_tonic_name: \C
   scale_tonic_pitch:~
     -> SharpNoteNames.indexOf(@scale_tonic_name) or FlatNoteNames.indexOf(@scale_tonic_name)
-
-D3State = d3.dispatch \instrument \note_label \scale \scale_tonic
 
 const StringCount = 4
 const FingerPositions = 7
@@ -342,6 +344,8 @@ d3.{}music.fingerboard = (attributes) ->
 note-grid-view = (style, reference) ->
   my.column_count = style.columns ? 12 * 5
   my.row_count = style.rows ? 12
+  my.scale = Scales.0
+  my.instrument = Instruments.Violin
 
   function my selection
     my.selection = selection
@@ -379,26 +383,22 @@ note-grid-view = (style, reference) ->
       .attr y: 7
       .text -> ScaleDegreeNames[it.scale_degree]
 
-    D3State.on 'instrument.note_grid' -> update!
-    D3State.on 'scale.note_grid' -> update!
-    D3State.on 'scale_tonic.note_grid' -> update!
-
-    update!
+    my.update!
 
     setTimeout (-> selection.classed \animate true), 1
 
   function update_note_colors
-    scale_pitches = State.scale.pitches
+    scale_pitches = my.scale.pitches
 
     my.selection.selectAll \.scale-degree
       .classed \chromatic ({scale_degree}) -> scale_degree not in scale_pitches
       .classed \tonic ({scale_degree}) -> scale_degree in scale_pitches and scale_degree == 0
       .classed \fifth ({scale_degree}) -> scale_degree in scale_pitches and scale_degree == 7
 
-  function update
+  my.update = ->
     update_note_colors!
-    scale_tonic = State.scale_tonic_pitch
-    bass_pitch = State.instrument.string_pitches.0
+    scale_tonic = my.scale_tonic_pitch
+    bass_pitch = my.instrument.string_pitches.0
     pos = $('#fingerboard').offset!
     pos.left -= style.string_width * pitch_class((scale_tonic - bass_pitch) * 5)
     # FIXME why the fudge factors?
@@ -407,52 +407,65 @@ note-grid-view = (style, reference) ->
 
   return my
 
-fingerboard = d3.music.fingerboard FingerboardStyle
-fingerboard.instrument = State.instrument
-fingerboard.note_label = State.note_label
-fingerboard.scale = State.scale
-fingerboard.scale_tonic_pitch = State.scale_tonic_pitch
-d3.select(\#fingerboard).call fingerboard
-D3State.on \instrument.fingerboard, ->
-  fingerboard.instrument = State.instrument
-  fingerboard.dispatcher.update!
-D3State.on \note_label.fingerboard, ->
-  fingerboard.note_label = State.note_label
-  fingerboard.dispatcher.update!
-D3State.on \scale.fingerboard, ->
-  fingerboard.scale = State.scale
-  fingerboard.dispatcher.update!
-D3State.on \scale_tonic.fingerboard, ->
-  fingerboard.scale_tonic_pitch = State.scale_tonic_pitch
-  fingerboard.dispatcher.update!
+module = angular.module 'FingerboardScales', []
 
-keyboard = d3.music.keyboard KeyboardStyle
-# TODO keyboard.tonic =
-d3.select(\#keyboard).call keyboard
-keyboard.dispatcher.on \tonic, (tonic) ->
-  State.scale_tonic_name = tonic
-  D3State.scale_tonic!
+@FingerboardScalesCtrl = ($scope) ->
+  $('#about-text a').attr \target \_blank
+  $('#about').popover content: $('#about-text').html!, html: true, placement: \bottom
+  $scope.instrument = Instruments.Violin
+  $scope.scale = Scales.0
+  $scope.scale_tonic_name = \C
+  $scope.scale_tonic_pitch = 0
+  window.s1 = $scope
 
-scales = d3.music.scales ScaleStyle
-d3.select(\#scales).call scales
-scales.dispatcher.on \scale, (scale) ->
-  State.scale = scale
-  D3State.scale!
+  scales = d3.music.scales ScaleStyle
+  d3.select(\#scales).call scales
+  scales.dispatcher.on \scale, (scale) ->
+    $scope.$apply -> $scope.scale = scale
 
-grid-view = note-grid-view FingerboardStyle, $('#fingerboard')
-d3.select(\#scale-notes).call grid-view
+  grid-view = note-grid-view FingerboardStyle, $('#fingerboard')
+  d3.select(\#scale-notes).call grid-view
+  $scope.$watch ->
+    grid-view.instrument = $scope.instrument
+    grid-view.scale = $scope.scale
+    grid-view.scale_tonic_pitch = $scope.scale_tonic_pitch
+    grid-view.update!
 
-$('#instruments .btn').click ->
-  $('#instruments .btn').removeClass \btn-default
-  $(@).addClass \btn-default
-  State.instrument = Instruments[$(@).text!]
-  D3State.instrument!
+  $('#instruments .btn').click ->
+    $('#instruments .btn').removeClass \btn-default
+    $(@).addClass \btn-default
+    instrument_name = $(@).text!
+    $scope.$apply ->
+      $scope.instrument = Instruments[instrument_name]
 
-$('#fingerings .btn').click ->
-  $('#fingerings .btn').removeClass \btn-default
-  $(@).addClass \btn-default
-  State.note_label = $(@).text!.replace(' ', '_').toLowerCase!
-  D3State.note_label!
+  $('#fingerings .btn').click ->
+    $('#fingerings .btn').removeClass \btn-default
+    $(@).addClass \btn-default
+    note_label_name = $(@).text!.replace(' ', '_').toLowerCase!
+    $scope.$apply ->
+      $scope.note_label = note_label_name
 
-$('#about-text a').attr \target \_blank
-$('#about').popover content: $('#about-text').html!, html: true, placement: \bottom
+module.directive 'fingerboard', ->
+  restrict: 'CE'
+  link: (scope, element, attrs) ->
+    fingerboard = d3.music.fingerboard FingerboardStyle
+    update_state = ->
+      fingerboard.instrument = scope.instrument
+      fingerboard.note_label = scope.note_label
+      fingerboard.scale = scope.scale
+      fingerboard.scale_tonic_pitch = scope.scale_tonic_pitch
+    update_state!
+    d3.select(element.context).call fingerboard
+    scope.$watch ->
+      update_state!
+      fingerboard.update_instrument!
+
+module.directive 'keyboard', ->
+  restrict: 'CE'
+  link: (scope, element, attrs) ->
+    keyboard = d3.music.keyboard KeyboardStyle
+    d3.select(element.context).call keyboard
+    keyboard.dispatcher.on \tonic, (tonic_name) ->
+      scope.$apply ->
+        scope.scale_tonic_name = tonic_name
+        scope.scale_tonic_pitch = pitch_name_to_number(tonic_name)

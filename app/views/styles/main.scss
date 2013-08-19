@@ -127,6 +127,8 @@ svg text {
 }
 
 #fingerboard {
+  display: block;
+
   .nut {
     stroke-width: 4;
     stroke: rgb(64, 64, 64);
