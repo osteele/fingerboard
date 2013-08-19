@@ -161,68 +161,44 @@ d3.{}music.keyboard = (attributes) ->
   return my
 
 
-d3.{}music.scales = (attributes) ->
+d3.{}music.pitch-constellation = (pitches, attributes) ->
   style = attributes
-  my.scales = Scales
-  my.scale = Scales.0
-  my.dispatcher = d3.dispatch \scale
 
-  function my selection
-    onclick = (scale_name) ->
-      scale = my.scales[scale_name]
-      my.scale = scale
-      my.dispatcher.scale scale
-      update!
+  (selection) ->
+    r = style.pitch_circle.radius
+    note_radius = style.pitch_circle.note.radius
+    pc_width = 2 * (r + note_radius + 1)
 
-    scales = selection
-      .selectAll \.scale
-      .data my.scales.map (.name)
-      .enter!
-        .append \div
-          .classed \scale true
-          .on \click onclick
-
-    scales.append \h2 .text (scale_name) -> scale_name
-
-    pc_width = 2 * (style.pitch_circle.radius + style.pitch_circle.note.radius + 1)
-    scales.append \svg
+    root = selection.append \svg
       .attr width: pc_width, height: pc_width
       .append \g
         .attr transform: "translate(#{pc_width / 2}, #{pc_width / 2})"
 
-    scales.selectAll 'svg g' .each (scale_name) ->
-      pitches = my.scales[scale_name].pitches
-      r = style.pitch_circle.radius
-      endpoints = Pitches.map (pitch) ->
-        a = (pitch - 3) * 2 * Math.PI / 12
-        x = Math.cos(a) * r
-        y = Math.sin(a) * r
-        chromatic = pitch not in pitches
-        return {x, y, chromatic, pitch}
-      d3.select this
-        .selectAll \line
-        .data endpoints
-        .enter!
-          .append \line
-            .classed \chromatic (.chromatic)
-            .attr \x2 (.x)
-            .attr \y2 (.y)
-      d3.select this
-        .selectAll \circle
-        .data endpoints
-        .enter!
-          .append \circle
-            .classed \chromatic (.chromatic)
-            .classed \root (.pitch == 0)
-            .classed \fifth (.pitch == 7)
-            .attr \cx (.x)
-            .attr \cy (.y)
-            .attr \r style.pitch_circle.note.radius
+    endpoints = Pitches.map (pitch) ->
+      a = (pitch - 3) * 2 * Math.PI / 12
+      x = Math.cos(a) * r
+      y = Math.sin(a) * r
+      chromatic = pitch not in pitches
+      return {x, y, chromatic, pitch}
 
-    update = ->
-      scales.classed 'selected', (== my.scale.name)
+    root.selectAll \line
+      .data endpoints
+      .enter!
+        .append \line
+          .classed \chromatic (.chromatic)
+          .attr \x2 (.x)
+          .attr \y2 (.y)
 
-    update!
+    root.selectAll \circle
+      .data endpoints
+      .enter!
+        .append \circle
+          .classed \chromatic (.chromatic)
+          .classed \root (.pitch == 0)
+          .classed \fifth (.pitch == 7)
+          .attr \cx (.x)
+          .attr \cy (.y)
+          .attr \r note_radius
 
 
 d3.{}music.fingerboard = (attributes) ->
@@ -413,15 +389,11 @@ module = angular.module 'FingerboardScales', []
   $('#about-text a').attr \target \_blank
   $('#about').popover content: $('#about-text').html!, html: true, placement: \bottom
   $scope.instrument = Instruments.Violin
+  $scope.scales = Scales
   $scope.scale = Scales.0
   $scope.scale_tonic_name = \C
   $scope.scale_tonic_pitch = 0
-  window.s1 = $scope
-
-  scales = d3.music.scales ScaleStyle
-  d3.select(\#scales).call scales
-  scales.dispatcher.on \scale, (scale) ->
-    $scope.$apply -> $scope.scale = scale
+  $scope.setScale = (s) -> $scope.scale = s
 
   grid-view = note-grid-view FingerboardStyle, $('#fingerboard')
   d3.select(\#scale-notes).call grid-view
@@ -459,6 +431,15 @@ module.directive 'fingerboard', ->
     scope.$watch ->
       update_state!
       fingerboard.update_instrument!
+
+module.directive 'pitchConstellation', ->
+  restrict: 'CE'
+  replace: true
+  scope: {pitches: '=pitches'}
+  transclude: true
+  link: (scope, element, attrs) ->
+    constellation = d3.music.pitch-constellation scope.pitches, ScaleStyle
+    d3.select(element.context).call constellation
 
 module.directive 'keyboard', ->
   restrict: 'CE'
