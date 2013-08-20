@@ -214,15 +214,15 @@ svg text {
     fill: $root-color !important;
   }
 
-  &.fifth rect {
-    fill: $fifth-color !important;
-  }
-
   &.black-key.root rect {
     fill: darken($root-color, 45%) !important;
   }
 
-  &.black-key.fifth rect {
+  &.fifth.scale-note rect {
+    fill: $fifth-color !important;
+  }
+
+  &.black-key.fifth.scale-note rect {
     fill: darken($fifth-color, 75%) !important;
   }
 

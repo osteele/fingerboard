@@ -160,6 +160,7 @@ d3.music.keyboard = (model, attributes) ->
     update = ->
       key_views
         .classed \root, ({pitch}) -> pitch == model.scale_tonic_pitch
+        .classed \scale-note, ({pitch}) -> pitch_class(pitch - model.scale_tonic_pitch) in model.scale.pitches
         .classed \fifth, ({pitch}) -> pitch_class(pitch - model.scale_tonic_pitch) == 7
 
     dispatcher.on \update -> update!
@@ -478,6 +479,8 @@ module.directive 'keyboard', ->
   link: ($scope, element, attrs) ->
     keyboard = d3.music.keyboard $scope, Style.keyboard
     d3.select(element.context).call keyboard
+    $scope.$watch ->
+      keyboard.update!
     keyboard.dispatcher.on \tonic, (tonic_name) ->
       $scope.$apply ->
         $scope.scale_tonic_name = tonic_name
