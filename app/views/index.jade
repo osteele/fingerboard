@@ -42,8 +42,16 @@ html(lang="en", ng-app="FingerboardScales")
 
     .module.panel
       h2.panel-title Scale Class
-      #scales
-        .scale(ng-repeat="s in scales", ng-class="{selected: s == scale}", ng-click="setScale(s)",
+      #scales.scales
+        .scale(ng-repeat="s in scales", ng-class="{selected: s == scale || s == scale.parent}", ng-click="setScale(s)",
+            ng-mouseover="hover.pitches = s.pitches", ng-mouseout="hover.pitches = null")
+          h3 {{s.name}}
+          pitch-constellation(pitches="s.pitches")
+
+    .module.panel(ng-show="scale.modes || scale.parent.modes")
+      h2.panel-title Modes
+      #modes.scales
+        .scale(ng-repeat="s in (scale.modes || scale.parent.modes)", ng-class="{selected: s == scale}", ng-click="setScale(s)",
             ng-mouseover="hover.pitches = s.pitches", ng-mouseout="hover.pitches = null")
           h3 {{s.name}}
           pitch-constellation(pitches="s.pitches")

@@ -2,23 +2,51 @@
 # Music Theory
 #
 
-const SharpNoteNames = <[ C C# D D# E F F# G G# A A# B ]> .map (.replace /#/g '\u266F')
+const SharpNoteNames = <[ C C# D D# E F F# G G# A A# B ]> .map (.replace /#/ '\u266F')
 const FlatNoteNames = <[ C Db D Eb E F Gb G Ab A Bb B ]> .map (.replace /b/ '\u266D')
-const ScaleDegreeNames = <[ 1 b2 2 b3 3 4 b5 5 b6 6 b7 7 ]> .map (.replace /(\d)/ '$1\u0302' .replace /b/g '\u266D')
+const ScaleDegreeNames = <[ 1 b2 2 b3 3 4 b5 5 b6 6 b7 7 ]> .map (.replace /(\d)/ '$1\u0302' .replace /b/ '\u266D')
+
+const Pitches = [0 til 12]
+
+pitch_name_to_number = (pitch_name) ->
+  pitch = FlatNoteNames.indexOf pitch_name
+  pitch = SharpNoteNames.indexOf pitch_name unless pitch >= 0
+  return pitch
+
+pitch_number_to_name = (pitch_number) ->
+  pitch = pitch_class(pitch_number)
+  SharpNoteNames.indexOf(pitch) or FlatNoteNames.indexOf(pitch)
+
+pitch_class = (pitch) ->
+  pitch %% 12
+
+pitch_name = (pitch, options={}) ->
+  flatName = FlatNoteNames[pitch]
+  sharpName = SharpNoteNames[pitch]
+  name = if options.sharp then sharpName else flatName
+  if options.flat and options.sharp and flatName != sharpName
+    name = "#{flatName}/\n#{sharpName}"
+  name
 
 const Scales =
   * name: 'Diatonic Major'
     pitches: [0 2 4 5 7 9 11]
+    mode_names: <[ Ionian Dorian Phrygian Lydian Mixolydian Aeolian Locrian ]>
   * name: 'Natural Minor'
     pitches: [0 2 3 5 7 8 10]
+    mode_of: 'Diatonic Major'
   * name: 'Major Pentatonic'
     pitches: [0 2 4 7 9]
+    mode_names: ['Major Pentatonic' 'Suspended Pentatonic' 'Man Gong' 'Ritusen' 'Minor Pentatonic']
   * name: 'Minor Pentatonic'
     pitches: [0 3 5 7 10]
+    mode_of: 'Major Pentatonic'
   * name: 'Melodic Minor'
     pitches: [0 2 3 5 7 9 11]
+    mode_names: ['Jazz Minor' 'Dorian b2' 'Lydian Augmented' 'Lydian Dominant' 'Mixolydian b6' 'Semilocrian' 'Superlocrian']
   * name: 'Harmonic Minor'
     pitches: [0 2 3 5 7 8 11]
+    mode_names: ['Harmonic Minor' 'Locrian #6' 'Ionian Augmented' 'Romanian' 'Phrygian Dominant' 'Lydian #2' 'Ultralocrian']
   * name: 'Blues'
     pitches: [0 3 5 6 7 10]
   * name: 'Freygish'
@@ -29,16 +57,18 @@ const Scales =
     pitches: [0 2 3 5 6 8 9 11]
 
 do ->
-  for scale in Scales then Scales[scale.name] = scale
-
-pitch_name_to_number = (pitch_name) ->
-  pitch = FlatNoteNames.indexOf pitch_name
-  pitch = SharpNoteNames.indexOf pitch_name unless pitch >= 0
-  return pitch
-
-pitch_number_to_name = (pitch_number) ->
-  pitch = pitch_class(pitch_number)
-  SharpNoteNames.indexOf(pitch) or FlatNoteNames.indexOf(pitch)
+  for {name, mode_names, pitches}:scale in Scales
+    Scales[name] = scale
+  rotate = (pitches, i) ->
+    pitches = pitches.slice(i) ++ pitches[0 til i]
+    pitches.map -> pitch_class(it - pitches[0])
+  for {name, mode_names, mode_of, pitches}:scale in Scales
+    if mode_of?
+      base = Scales[mode_of]
+      [i] = [0 til pitches.length].filter (i) -> rotate(base.pitches, i) * ',' == pitches * ','
+      mode_names = scale.mode_names = base.mode_names.slice(i) ++ base.mode_names[0 til i]
+    if mode_names?
+      scale.modes = [{name: name.replace(/#/ '\u266F').replace(/\bb(\d)/ '\u266D$1'), pitches: rotate(pitches, i), parent: scale} for name, i in mode_names]
 
 const Instruments =
   * name: 'Violin'
@@ -51,21 +81,8 @@ const Instruments =
 do ->
   for instrument in Instruments then Instruments[instrument.name] = instrument
 
-const Pitches = [0 til 12]
-
 pitch_at = (string_number, fret_number) ->
   pitch_class string_number * 7 + fret_number
-
-pitch_class = (pitch) ->
-  pitch %% 12
-
-pitch_name = (pitch, options={}) ->
-  flatName = FlatNoteNames[pitch]
-  sharpName = SharpNoteNames[pitch]
-  name = if options.sharp then sharpName else flatName
-  if options.flat and options.sharp and flatName != sharpName
-    name = "#{flatName}/\n#{sharpName}"
-  name
 
 
 #
@@ -414,10 +431,11 @@ module = angular.module 'FingerboardScales', []
   $('#about').popover content: $('#about-text').html!, html: true, placement: \bottom
   $scope.instrument = Instruments.Violin
   $scope.scales = Scales
-  $scope.scale = Scales.0
+  $scope.scale = Scales.0.modes.0
   $scope.scale_tonic_name = \C
   $scope.scale_tonic_pitch = 0
-  $scope.setScale = (s) -> $scope.scale = s
+  $scope.setScale = (s) ->
+    $scope.scale = s.modes?.0 or s
   $scope.hover =
     pitches: null
     scale_tonic_pitch: null

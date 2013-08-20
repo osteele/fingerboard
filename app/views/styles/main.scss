@@ -256,14 +256,14 @@ svg text {
   }
 
   body.hover-scale-note-degree-#{$i} {
-    #scales .scale .scale-note-degree-#{$i} {
+    .scale .scale-note-degree-#{$i} {
       stroke-width: 2px;
       filter:url(#hovered-scale-note);
     }
   }
 }
 
-#scales {
+#scales, #modes {
   background: white;
   border: 1px solid gray;
   width: 290px;
