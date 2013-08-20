@@ -214,7 +214,19 @@ svg text {
     fill: $root-color !important;
   }
 
-  &:hover rect, &.root:hover rect {
+  &.fifth rect {
+    fill: $fifth-color !important;
+  }
+
+  &.black-key.root rect {
+    fill: darken($root-color, 45%) !important;
+  }
+
+  &.black-key.fifth rect {
+    fill: darken($fifth-color, 75%) !important;
+  }
+
+  &:hover rect, &.root:hover rect, &.fifth:hover rect {
     fill: gray !important;
     @include vendor-prefix(transition, fill 0.2s);
   }

@@ -72,7 +72,6 @@ pitch_name = (pitch, options={}) ->
 # Settings
 #
 
-const StringCount = 4
 const FingerPositions = 7
 
 const Style =
@@ -82,6 +81,7 @@ const Style =
     note_radius: 20
 
   keyboard:
+    octaves: 2
     key_width: 25
     key_spacing: 3
     white_key_height: 120
@@ -99,19 +99,20 @@ const Style =
 d3.music or= {}
 
 d3.music.keyboard = (model, attributes) ->
-  style = attributes
-  key_count = 7
+  const style = attributes
+  const octaves = attributes.octaves
+  const stroke_width = 1
   my.dispatcher = dispatcher = d3.dispatch \mouseover \mouseout \tonic \update
   my.update = -> dispatcher.update!
 
   function my selection
-    keys = Pitches.map (pitch) ->
+    const keys = [pitch_class(i) for i in [0 til 12 * octaves]].map (pitch) ->
       is_black_key = FlatNoteNames[pitch].length > 1
-      note_name = pitch_name pitch, flat: true
+      note_name = pitch_name pitch, {+flat}
       height = (if is_black_key then style.black_key_height else style.white_key_height)
       return {pitch, name: note_name, is_black_key, attrs: {width: style.key_width, height, y: 0}}
 
-    x = 1
+    x = stroke_width
     for {{width}:attrs, is_black_key} in keys
       attrs.x = x
       attrs.x -= width / 2 if is_black_key
@@ -120,9 +121,10 @@ d3.music.keyboard = (model, attributes) ->
     # order the black keys on top of (following) the while keys
     keys.sort (a, b) -> a.is_black_key - b.is_black_key
 
+    const white_key_count = octaves * 7
     root = selection.append \svg
       .attr do
-        width: key_count * (style.key_width + style.key_spacing)
+        width: white_key_count * (style.key_width + style.key_spacing) - style.key_spacing + 2 * stroke_width
         height: style.white_key_height + 1
 
     onclick = ({pitch, name}) ->
@@ -158,6 +160,7 @@ d3.music.keyboard = (model, attributes) ->
     update = ->
       key_views
         .classed \root, ({pitch}) -> pitch == model.scale_tonic_pitch
+        .classed \fifth, ({pitch}) -> pitch_class(pitch - model.scale_tonic_pitch) == 7
 
     dispatcher.on \update -> update!
     update!
@@ -166,19 +169,19 @@ d3.music.keyboard = (model, attributes) ->
 
 
 d3.music.pitch-constellation = (pitches, attributes) ->
-  style = attributes
+  const style = attributes
 
   (selection) ->
-    r = style.constellation_radius
-    note_radius = style.pitch_radius
-    pc_width = 2 * (r + note_radius + 1)
+    const r = style.constellation_radius
+    const note_radius = style.pitch_radius
+    const pc_width = 2 * (r + note_radius + 1)
 
     root = selection.append \svg
       .attr width: pc_width, height: pc_width
       .append \g
         .attr transform: "translate(#{pc_width / 2}, #{pc_width / 2})"
 
-    endpoints = Pitches.map (pitch) ->
+    const endpoints = Pitches.map (pitch) ->
       a = (pitch - 3) * 2 * Math.PI / 12
       x = Math.cos(a) * r
       y = Math.sin(a) * r
@@ -207,15 +210,16 @@ d3.music.pitch-constellation = (pitches, attributes) ->
 
 
 d3.music.fingerboard = (model, attributes) ->
-  style = attributes
-  label_sets = <[ notes fingerings scale-degrees ]>
-  my.dispatcher = dispatcher = d3.dispatch \mouseover \mouseout \update
+  const style = attributes
+  const label_sets = <[ notes fingerings scale-degrees ]>
+  const dispatcher = my.dispatcher = d3.dispatch \mouseover \mouseout \update
   d3_notes = null
   note_label = null
 
   function my selection
-    finger_positions = []
-    for string_number from 0 til StringCount
+    const string_count = model.instrument.string_pitches.length
+    const finger_positions = []
+    for string_number from 0 til string_count
       for fret_number from 0 to FingerPositions
         pitch = pitch_at string_number, fret_number
         fingering_name = String Math.ceil(fret_number / 2)
@@ -228,19 +232,19 @@ d3.music.fingerboard = (model, attributes) ->
 
     root = selection
       .append \svg
-        .attr width: StringCount * style.string_width
-        .attr height: FingerPositions * style.fret_height
+        .attr width: string_count * style.string_width
+        .attr height: (1 + FingerPositions) * style.fret_height
 
     # nut
     root.append \line
       .classed \nut true
       .attr do
-        x2: StringCount * style.string_width
+        x2: string_count * style.string_width
         transform: "translate(0, #{style.fret_height - 5})"
 
     # strings
     root.selectAll \.string
-      .data [0 til StringCount]
+      .data [0 til string_count]
       .enter!
         .append \line
           .classed \string true
@@ -288,10 +292,10 @@ d3.music.fingerboard = (model, attributes) ->
   my.update = ->
     update_instrument!
 
-    scale_tonic = model.scale_tonic_pitch
-    scale = model.scale
-    scale_pitches = [pitch_class(pitch + scale_tonic) for pitch in scale.pitches]
-    tonic = scale_pitches.0
+    const scale_tonic = model.scale_tonic_pitch
+    const scale = model.scale
+    const scale_pitches = [pitch_class(pitch + scale_tonic) for pitch in scale.pitches]
+    const tonic = scale_pitches.0
 
     note_label := note_label or \notes
     for k in label_sets
@@ -306,7 +310,9 @@ d3.music.fingerboard = (model, attributes) ->
       .classed \finger-position true
       .classed \scale -> it.pitch in scale_pitches
       .classed \chromatic -> it.pitch not in scale_pitches
-      .select \.scale-degree .text ({pitch}) -> ScaleDegreeNames[pitch_class pitch - tonic]
+      .select \.scale-degree
+        .text ""
+        .text ({pitch}) -> ScaleDegreeNames[pitch_class pitch - tonic]
 
     d3_notes.each ({pitch}) ->
       note_labels = d3.select this
@@ -331,8 +337,8 @@ d3.music.fingerboard = (model, attributes) ->
 
 
 d3.music.note-grid = (model, style, referenceElement) ->
-  column_count = style.columns ? 12 * 5
-  row_count = style.rows ? 12
+  const column_count = style.columns ? 12 * 5
+  const row_count = style.rows ? 12
   selection = null
 
   function my _selection
