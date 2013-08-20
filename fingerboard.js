@@ -248,6 +248,10 @@
           var pitch;
           pitch = arg$.pitch;
           return pitch === model.scale_tonic_pitch;
+        }).classed('fifth', function(arg$){
+          var pitch;
+          pitch = arg$.pitch;
+          return pitch_class(pitch - model.scale_tonic_pitch) === 7;
         });
       };
       dispatcher.on('update', function(){
@@ -310,7 +314,7 @@
     var style, label_sets, dispatcher, d3_notes, note_label, update_instrument;
     style = attributes;
     label_sets = ['notes', 'fingerings', 'scale-degrees'];
-    my.dispatcher = dispatcher = d3.dispatch('mouseover', 'mouseout', 'update');
+    dispatcher = my.dispatcher = d3.dispatch('mouseover', 'mouseout', 'update');
     d3_notes = null;
     note_label = null;
     function my(selection){
