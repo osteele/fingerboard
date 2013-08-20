@@ -443,6 +443,7 @@ module = angular.module 'FingerboardScales', []
       $scope.note_label = note_label_name
 
   $(document).bind \touchmove false
+  $('body').removeClass \loading
 
 module.directive 'fingerboard', ->
   restrict: 'CE'

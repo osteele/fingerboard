@@ -20,7 +20,7 @@ html(lang="en", ng-app="FingerboardScales")
 
     script(src="./fingerboard.js", defer)
 
-  body(ng-controller="FingerboardScalesCtrl", ng-class="bodyClassNames()")
+  body.loading(ng-controller="FingerboardScalesCtrl", ng-class="bodyClassNames()")
     h1
       | Fingerboard Scales
 
@@ -68,6 +68,7 @@ html(lang="en", ng-app="FingerboardScales")
           ---
 
           Built by [Oliver Steele](http://github.com/osteele) using
+          [Angular](http://angularjs.org),
           [D3](http://d3js.org/),
           [Grunt](http://gruntjs.com/),
           [Jade](http://jade-lang.com/),

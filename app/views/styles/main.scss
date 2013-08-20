@@ -32,6 +32,8 @@ h1 {
   background: rgba(255, 255, 255, 0.5);
 }
 
+body.loading .module { display: none; }
+
 #templates { display: none; }
 
 $root-color: rgb(255, 96, 96);
