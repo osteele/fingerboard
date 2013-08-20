@@ -2,8 +2,8 @@
 # Music Theory
 #
 
-const SharpNoteNames = <[ C C# D D# E F F# G G# A A# B ]>
-const FlatNoteNames = <[ C Db D Eb E F Gb G Ab A Bb B ]>
+const SharpNoteNames = <[ C C# D D# E F F# G G# A A# B ]> .map (.replace /#/g '\u266F')
+const FlatNoteNames = <[ C Db D Eb E F Gb G Ab A Bb B ]> .map (.replace /b/ '\u266D')
 const ScaleDegreeNames = <[ 1 b2 2 b3 3 4 b5 5 b6 6 b7 7 ]> .map (.replace /(\d)/ '$1\u0302' .replace /b/g '\u266D')
 
 const Scales =
@@ -65,7 +65,7 @@ pitch_name = (pitch, options={}) ->
   name = if options.sharp then sharpName else flatName
   if options.flat and options.sharp and flatName != sharpName
     name = "#{flatName}/\n#{sharpName}"
-  name.replace /b/ '\u266D' .replace /#/g '\u266F'
+  name
 
 
 #
@@ -314,7 +314,7 @@ d3.music.fingerboard = (model, attributes) ->
   update_instrument = ->
     string_pitches = model.instrument.string_pitches
     scale_tonic_name = model.scale_tonic_name
-    pitch_name_options = if scale_tonic_name == /b/ then {+sharp} else {+flat}
+    pitch_name_options = if scale_tonic_name == /\u266D/ then {+flat} else {+sharp}
     select_pitch_name_component = (component, {pitch}) -->
       name = pitch_name pitch, pitch_name_options
       switch component
