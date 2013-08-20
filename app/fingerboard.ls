@@ -442,6 +442,8 @@ module = angular.module 'FingerboardScales', []
     $scope.$apply ->
       $scope.note_label = note_label_name
 
+  $(document).bind \touchmove false
+
 module.directive 'fingerboard', ->
   restrict: 'CE'
   link: ($scope, element, attrs) ->
