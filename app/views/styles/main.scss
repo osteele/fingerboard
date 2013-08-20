@@ -161,11 +161,11 @@ svg text {
   &.scale {
     circle { fill: lightGreen; }
 
-    &.root {
+    &.scale-note-0 {
       circle { fill: $root-color; }
     }
 
-    &.fifth {
+    &.scale-note-7 {
       circle { fill: $fifth-color; }
     }
   }
@@ -219,27 +219,31 @@ svg text {
 }
 
 @for $i from 0 through 11 {
-  body.scale-includes-#{$i} .scale-note-#{$i}.white-key rect {
-    fill: lighten(green, 65%) !important;
+  body.scale-includes-#{$i} {
+    .scale-note-#{$i}.white-key rect {
+      fill: lighten(green, 65%) !important;
+    }
+
+    .scale-note-#{$i}.black-key rect {
+      fill: darken(green, 10%) !important;
+    }
   }
 
-  body.scale-includes-#{$i} .scale-note-#{$i}.black-key rect {
-    fill: darken(green, 10%) !important;
-  }
+  body.hover-scale-note-#{$i} {
+    .scale .scale-note-#{$i} {
+      stroke-width: 2px;
+      filter:url(#hovered-scale-note);
+    }
 
-  body.hover-scale-note-#{$i} .scale .scale-note-#{$i} {
-    stroke-width: 2px;
-    filter:url(#hovered-scale-note);
-  }
+    #fingerboard .finger-position.scale-note-#{$i} {
+      stroke-width: 2px;
+      filter:url(#hovered-scale-note);
+    }
 
-  body.hover-scale-note-#{$i} #fingerboard .finger-position.scale-note-#{$i} {
-    stroke-width: 2px;
-    filter:url(#hovered-scale-note);
-  }
-
-  body.hover-scale-note-#{$i} #keyboard .scale-note-#{$i} {
-    stroke-width: 3px;
-    filter:url(#hovered-scale-note);
+    #keyboard .scale-note-#{$i} {
+      stroke-width: 3px;
+      filter:url(#hovered-scale-note);
+    }
   }
 }
 

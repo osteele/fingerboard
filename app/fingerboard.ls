@@ -270,6 +270,12 @@ d3.{}music.fingerboard = (model, attributes) ->
     dispatcher.on \update -> my.update!
     my.update!
 
+  my.attr = (key, value) ->
+    throw "Unknown key #{key}" unless key = 'note_label'
+    return note_label unless arguments.length > 1
+    note_label := value
+    my.update!
+
   my.update = ->
     update_instrument!
 
@@ -284,34 +290,33 @@ d3.{}music.fingerboard = (model, attributes) ->
       labels = d3.select \#fingerboard .selectAll '.' + k.replace /s$/ ''
       labels.attr \visibility (if visible then 'inherit' else 'hidden')
 
-    d3_notes.attr \class -> "scale-note-#{pitch_class it.pitch - tonic}"
+    scale_degree = (pitch) -> pitch_class pitch - tonic
+
+    d3_notes
+      .attr \class -> "scale-note-#{pitch_class it.pitch - tonic}"
+      .classed \finger-position true
+      .classed \scale -> it.pitch in scale_pitches
+      .classed \chromatic -> it.pitch not in scale_pitches
+      .select \.scale-degree .text ({pitch}) -> ScaleDegreeNames[pitch_class pitch - tonic]
 
     d3_notes.each ({pitch}) ->
-      scale_degree = pitch_class pitch - tonic
-      # d3.select this .select \scale-degree .text 'x'
-      note_label = d3.select this
-        .classed \finger-position true
-        .classed \scale pitch in scale_pitches
-        .classed \chromatic pitch not in scale_pitches
-        .classed \root scale_degree == 0
-        .classed \fifth scale_degree == 7
-        .select \.scale-degree .text ({pitch}) -> ScaleDegreeNames[pitch_class pitch - tonic]
+      note_labels = d3.select this
 
   update_instrument = ->
     string_pitches = model.instrument.string_pitches
     scale_tonic_name = model.scale_tonic_name
     pitch_name_options = if scale_tonic_name == /b/ then {+sharp} else {+flat}
-    select_pitch_name_component = (component) -> ({pitch}) ->
+    select_pitch_name_component = (component, {pitch}) -->
       name = pitch_name pitch, pitch_name_options
       switch component
-      | \base => name.replace /(.).*/ '$1'
-      | \accidental => name.replace /^./ ''
+      | \base => name - /[^\w]/
+      | \accidental => name - /[\w]/
 
     d3_notes.each ({string_number, fret_number, pitch}:note) ->
       note.pitch = pitch_class string_pitches[string_number] + fret_number
-      note_label = d3.select this .select \.note
-      note_label.select \.base .text select_pitch_name_component \base
-      note_label.select \.accidental .text select_pitch_name_component \accidental
+      note_labels = d3.select this .select \.note
+      note_labels.select \.base .text select_pitch_name_component \base
+      note_labels.select \.accidental .text select_pitch_name_component \accidental
 
   return my
 
@@ -395,11 +400,10 @@ module = angular.module 'FingerboardScales', []
   $scope.hover = {}
   $scope.bodyClassNames = ->
     tonic = $scope.scale_tonic_pitch
-    tonic = $scope.hover.scale_tonic_pitch if $scope.hover?scale_tonic_pitch
+    tonic = $scope.hover.scale_tonic_pitch if $scope.hover.scale_tonic_pitch >= 0
     classes = []
-    classes ++= ["scale-includes-#{pitch_class(n + tonic)}" for n in $scope.scale.pitches] unless $scope.hover?pitches
-    classes ++= ["scale-includes-#{pitch_class(n + tonic)}" for n in $scope.hover.pitches] if $scope.hover?pitches
-    classes.push "hover-scale-note-#{pitch_class($scope.hover_pitch - tonic)}" if $scope?hover_pitch
+    classes ++= ["scale-includes-#{pitch_class(n + tonic)}" for n in ($scope.hover.pitches ? $scope.scale.pitches)]
+    classes.push "hover-scale-note-#{pitch_class($scope.hover.scale_tonic_pitch - $scope.scale_tonic_pitch)}" if $scope.hover.scale_tonic_pitch >= 0
     classes
 
   note-grid = d3.music.note-grid $scope, Style.fingerboard, $('#fingerboard')
@@ -425,11 +429,13 @@ module.directive 'fingerboard', ->
   link: (scope, element, attrs) ->
     fingerboard = d3.music.fingerboard scope, Style.fingerboard
     d3.select(element.context).call fingerboard
-    scope.$watch -> fingerboard.update!
+    scope.$watch ->
+      fingerboard.attr \note_label, scope.note_label
+      fingerboard.update!
     fingerboard.dispatcher.on \mouseover, (pitch) ->
-      scope.$apply -> scope.hover_pitch = pitch
+      scope.$apply -> scope.hover.scale_tonic_pitch = pitch
     fingerboard.dispatcher.on \mouseout, ->
-      scope.$apply -> scope.hover_pitch = null
+      scope.$apply -> scope.hover.scale_tonic_pitch = null
 
 module.directive 'pitchConstellation', ->
   restrict: 'CE'
@@ -450,8 +456,6 @@ module.directive 'keyboard', ->
         scope.scale_tonic_name = tonic_name
         scope.scale_tonic_pitch = pitch_name_to_number(tonic_name)
     keyboard.dispatcher.on \mouseover, (pitch) ->
-      scope.$apply -> scope.hover_pitch = pitch
       scope.$apply -> scope.hover.scale_tonic_pitch = pitch
     keyboard.dispatcher.on \mouseout, ->
-      scope.$apply -> scope.hover_pitch = null
       scope.$apply -> scope.hover.scale_tonic_pitch = null
