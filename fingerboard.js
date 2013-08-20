@@ -1,5 +1,5 @@
 (function(){
-  var SharpNoteNames, FlatNoteNames, ScaleDegreeNames, Scales, pitch_name_to_number, Instruments, State, D3State, StringCount, FingerPositions, FingerboardStyle, KeyboardStyle, ScaleStyle, Pitches, pitch_at, pitch_class, pitch_name, KeyboardView, ScaleSelectorView, FingerboardView, NoteGridView;
+  var SharpNoteNames, FlatNoteNames, ScaleDegreeNames, Scales, pitch_name_to_number, pitch_number_to_name, Instruments, State, StringCount, FingerPositions, Style, Pitches, pitch_at, pitch_class, pitch_name, module, replace$ = ''.replace;
   SharpNoteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
   FlatNoteNames = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
   ScaleDegreeNames = ['1', 'b2', '2', 'b3', '3', '4', 'b5', '5', 'b6', '6', 'b7', '7'].map(function(it){
@@ -54,50 +54,56 @@
     }
     return pitch;
   };
-  Instruments = {
-    Violin: [7, 14, 21, 28],
-    Viola: [0, 7, 14, 21],
-    Cello: [0, 7, 14, 21]
+  pitch_number_to_name = function(pitch_number){
+    var pitch;
+    pitch = pitch_class(pitch_number);
+    return SharpNoteNames.indexOf(pitch) || FlatNoteNames.indexOf(pitch);
   };
+  Instruments = [
+    {
+      name: 'Violin',
+      string_pitches: [7, 14, 21, 28]
+    }, {
+      name: 'Viola',
+      string_pitches: [0, 7, 14, 21]
+    }, {
+      name: 'Cello',
+      string_pitches: [0, 7, 14, 21]
+    }
+  ];
+  (function(){
+    var i$, ref$, len$, instrument, results$ = [];
+    for (i$ = 0, len$ = (ref$ = Instruments).length; i$ < len$; ++i$) {
+      instrument = ref$[i$];
+      results$.push(Instruments[instrument.name] = instrument);
+    }
+    return results$;
+  })();
   State = {
-    instrument_name: 'Violin',
+    instrument: Instruments.Violin,
     scale: Scales[0],
     scale_tonic_name: 'C',
-    scale_tonic_pitch: 0,
-    scale_class_name: 'Diatonic Major'
-  };
-  D3State = d3.dispatch('instrument', 'note_label', 'scale', 'scale_tonic');
-  StringCount = 4;
-  FingerPositions = 7;
-  FingerboardStyle = {
-    string_width: 50,
-    fret_height: 50,
-    note_radius: 20
-  };
-  KeyboardStyle = {
-    key: {
-      width: 25,
-      h_margin: 3
-    },
-    white_key: {
-      height: 120
-    },
-    black_key: {
-      height: 90
+    get scale_tonic_pitch(){
+      return SharpNoteNames.indexOf(this.scale_tonic_name) || FlatNoteNames.indexOf(this.scale_tonic_name);
     }
   };
-  ScaleStyle = {
-    cols: 4,
-    cell: {
-      width: 85,
-      height: 90,
-      padding: 0
+  StringCount = 4;
+  FingerPositions = 7;
+  Style = {
+    fingerboard: {
+      string_width: 50,
+      fret_height: 50,
+      note_radius: 20
     },
-    pitch_circle: {
-      radius: 28,
-      note: {
-        radius: 3
-      }
+    keyboard: {
+      key_width: 25,
+      key_spacing: 3,
+      white_key_height: 120,
+      black_key_height: 90
+    },
+    scales: {
+      constellation_radius: 28,
+      pitch_radius: 3
     }
   };
   Pitches = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
@@ -119,59 +125,73 @@
     }
     return name.replace(/b/, '\u266D').replace(/#/g, '\u266F');
   };
-  KeyboardView = (function(){
-    KeyboardView.displayName = 'KeyboardView';
-    var prototype = KeyboardView.prototype, constructor = KeyboardView;
-    function KeyboardView(selection, style){
-      var root, next_x, keys, onclick, key_views, update, this$ = this instanceof ctor$ ? this : new ctor$;
-      root = selection.append('svg').attr({
-        width: 7 * (style.key.width + style.key.h_margin),
-        height: style.white_key.height + 1
-      });
-      next_x = 1;
+  (d3.music || (d3.music = {})).keyboard = function(model, attributes){
+    var style, key_count, dispatcher;
+    style = attributes;
+    key_count = 7;
+    my.dispatcher = dispatcher = d3.dispatch('mouseover', 'mouseout', 'tonic', 'update');
+    my.update = function(){
+      return dispatcher.update();
+    };
+    function my(selection){
+      var keys, x, i$, len$, ref$, attrs, width, is_black_key, root, onclick, key_views, update;
       keys = Pitches.map(function(pitch){
-        var note_name, is_black_key, key_style, ref$, width, height, x;
+        var is_black_key, note_name, height;
+        is_black_key = FlatNoteNames[pitch].length > 1;
         note_name = pitch_name(pitch, {
           flat: true
         });
-        is_black_key = FlatNoteNames[pitch].length > 1;
-        ref$ = key_style = _.extend({}, style.key, is_black_key
-          ? style.black_key
-          : style.white_key), width = ref$.width, height = ref$.height;
-        x = next_x;
-        if (!is_black_key) {
-          next_x += width + style.key.h_margin;
-        }
-        if (is_black_key) {
-          x -= width / 2;
-        }
+        height = is_black_key
+          ? style.black_key_height
+          : style.white_key_height;
         return {
           pitch: pitch,
           name: note_name,
           is_black_key: is_black_key,
           attrs: {
-            width: width,
+            width: style.key_width,
             height: height,
-            x: x,
             y: 0
           }
         };
       });
+      x = 1;
+      for (i$ = 0, len$ = keys.length; i$ < len$; ++i$) {
+        ref$ = keys[i$], attrs = ref$.attrs, width = attrs.width, is_black_key = ref$.is_black_key;
+        attrs.x = x;
+        if (is_black_key) {
+          attrs.x -= width / 2;
+        }
+        if (!is_black_key) {
+          x += width + style.key_spacing;
+        }
+      }
       keys.sort(function(a, b){
         return a.is_black_key - b.is_black_key;
+      });
+      root = selection.append('svg').attr({
+        width: key_count * (style.key_width + style.key_spacing),
+        height: style.white_key_height + 1
       });
       onclick = function(arg$){
         var pitch, name;
         pitch = arg$.pitch, name = arg$.name;
-        State.scale_tonic_name = FlatNoteNames[pitch];
-        State.scale_tonic_pitch = pitch;
-        return D3State.scale_tonic();
+        model.scale_tonic_name = FlatNoteNames[pitch];
+        model.scale_tonic_pitch = pitch;
+        update();
+        return dispatcher.tonic(model.scale_tonic_name);
       };
-      key_views = root.selectAll('.piano-key').data(keys).enter().append('g').classed('piano-key', true).classed('black-key', function(it){
+      key_views = root.selectAll('.piano-key').data(keys).enter().append('g').attr('class', function(it){
+        return "scale-note-" + it.pitch;
+      }).classed('piano-key', true).classed('black-key', function(it){
         return it.is_black_key;
       }).classed('white-key', function(it){
         return !it.is_black_key;
-      }).on('click', onclick);
+      }).on('click', onclick).on('mouseover', function(it){
+        return dispatcher.mouseover(it.pitch);
+      }).on('mouseout', function(it){
+        return dispatcher.mouseout(it.pitch);
+      });
       key_views.append('rect').attr({
         x: function(arg$){
           var attrs;
@@ -196,14 +216,14 @@
       });
       key_views.append('text').attr({
         x: function(arg$){
-          var attrs;
-          attrs = arg$.attrs;
-          return attrs.x + attrs.width / 2;
+          var attrs, x, width;
+          attrs = arg$.attrs, x = attrs.x, width = attrs.width;
+          return x + width / 2;
         },
         y: function(arg$){
-          var attrs;
-          attrs = arg$.attrs;
-          return attrs.y + attrs.height - 6;
+          var attrs, y, height;
+          attrs = arg$.attrs, y = attrs.y, height = attrs.height;
+          return y + height - 6;
         }
       }).text(function(arg$){
         var name;
@@ -214,95 +234,74 @@
         return key_views.classed('root', function(arg$){
           var pitch;
           pitch = arg$.pitch;
-          return pitch === State.scale_tonic_pitch;
+          return pitch === model.scale_tonic_pitch;
         });
       };
-      D3State.on('scale_tonic.keyboard', function(){
+      dispatcher.on('update', function(){
         return update();
       });
-      update();
-      return this$;
-    } function ctor$(){} ctor$.prototype = prototype;
-    return KeyboardView;
-  }());
-  ScaleSelectorView = (function(){
-    ScaleSelectorView.displayName = 'ScaleSelectorView';
-    var prototype = ScaleSelectorView.prototype, constructor = ScaleSelectorView;
-    function ScaleSelectorView(selection, style){
-      var onclick, scales, pc_width, update, this$ = this instanceof ctor$ ? this : new ctor$;
-      onclick = function(scale_name){
-        State.scale = Scales[scale_name];
-        State.scale_class_name = scale_name;
-        return D3State.scale();
-      };
-      this$.scales = scales = selection.selectAll('.scale').data(Scales.map(function(it){
-        return it.name;
-      })).enter().append('div').classed('scale', true).on('click', onclick);
-      scales.append('h2').text(function(scale_name){
-        return scale_name;
-      });
-      pc_width = 2 * (style.pitch_circle.radius + style.pitch_circle.note.radius + 1);
-      scales.append('svg').attr({
+      return update();
+    }
+    return my;
+  };
+  (d3.music || (d3.music = {})).pitchConstellation = function(pitches, attributes){
+    var style;
+    style = attributes;
+    return function(selection){
+      var r, note_radius, pc_width, root, endpoints;
+      r = style.constellation_radius;
+      note_radius = style.pitch_radius;
+      pc_width = 2 * (r + note_radius + 1);
+      root = selection.append('svg').attr({
         width: pc_width,
         height: pc_width
       }).append('g').attr({
         transform: "translate(" + pc_width / 2 + ", " + pc_width / 2 + ")"
       });
-      scales.selectAll('svg g').each(function(scale_name){
-        var pitches, r, endpoints;
-        pitches = Scales[scale_name].pitches;
-        r = style.pitch_circle.radius;
-        endpoints = Pitches.map(function(pitch){
-          var a, x, y, chromatic;
-          a = (pitch - 3) * 2 * Math.PI / 12;
-          x = Math.cos(a) * r;
-          y = Math.sin(a) * r;
-          chromatic = !in$(pitch, pitches);
-          return {
-            x: x,
-            y: y,
-            chromatic: chromatic,
-            pitch: pitch
-          };
-        });
-        d3.select(this).selectAll('line').data(endpoints).enter().append('line').classed('chromatic', function(it){
-          return it.chromatic;
-        }).attr('x2', function(it){
-          return it.x;
-        }).attr('y2', function(it){
-          return it.y;
-        });
-        return d3.select(this).selectAll('circle').data(endpoints).enter().append('circle').classed('chromatic', function(it){
-          return it.chromatic;
-        }).classed('root', function(it){
-          return it.pitch === 0;
-        }).classed('fifth', function(it){
-          return it.pitch === 7;
-        }).attr('cx', function(it){
-          return it.x;
-        }).attr('cy', function(it){
-          return it.y;
-        }).attr('r', style.pitch_circle.note.radius);
+      endpoints = Pitches.map(function(pitch){
+        var a, x, y, chromatic;
+        a = (pitch - 3) * 2 * Math.PI / 12;
+        x = Math.cos(a) * r;
+        y = Math.sin(a) * r;
+        chromatic = !in$(pitch, pitches);
+        return {
+          x: x,
+          y: y,
+          chromatic: chromatic,
+          pitch: pitch
+        };
       });
-      update = function(){
-        return scales.classed('selected', function(it){
-          return it === State.scale_class_name;
-        });
-      };
-      D3State.on('scale.scale', function(){
-        return update();
+      root.selectAll('line').data(endpoints).enter().append('line').classed('chromatic', function(it){
+        return it.chromatic;
+      }).attr('x2', function(it){
+        return it.x;
+      }).attr('y2', function(it){
+        return it.y;
       });
-      update();
-      return this$;
-    } function ctor$(){} ctor$.prototype = prototype;
-    return ScaleSelectorView;
-  }());
-  FingerboardView = (function(){
-    FingerboardView.displayName = 'FingerboardView';
-    var prototype = FingerboardView.prototype, constructor = FingerboardView;
-    function FingerboardView(selection, style){
-      var finger_positions, i$, to$, string_number, j$, to1$, fret_number, pitch, fingering_name, root, note_labels, this$ = this instanceof ctor$ ? this : new ctor$;
-      this$.label_sets = ['notes', 'fingerings', 'scale-degrees'];
+      return root.selectAll('circle').data(endpoints).enter().append('circle').attr('class', function(it){
+        return "scale-note-" + it.pitch;
+      }).classed('chromatic', function(it){
+        return it.chromatic;
+      }).classed('root', function(it){
+        return it.pitch === 0;
+      }).classed('fifth', function(it){
+        return it.pitch === 7;
+      }).attr('cx', function(it){
+        return it.x;
+      }).attr('cy', function(it){
+        return it.y;
+      }).attr('r', note_radius);
+    };
+  };
+  (d3.music || (d3.music = {})).fingerboard = function(model, attributes){
+    var style, label_sets, dispatcher, d3_notes, note_label, update_instrument;
+    style = attributes;
+    label_sets = ['notes', 'fingerings', 'scale-degrees'];
+    my.dispatcher = dispatcher = d3.dispatch('mouseover', 'mouseout', 'update');
+    d3_notes = null;
+    note_label = null;
+    function my(selection){
+      var finger_positions, i$, to$, string_number, j$, to1$, fret_number, pitch, fingering_name, root, note_labels;
       finger_positions = [];
       for (i$ = 0, to$ = StringCount; i$ < to$; ++i$) {
         string_number = i$;
@@ -340,7 +339,7 @@
           return "translate(" + (it + 0.5) * style.string_width + ", 0)";
         }
       });
-      this$.d3_notes = root.selectAll('.finger-position').data(finger_positions).enter().append('g').classed('finger-position', true).attr({
+      d3_notes = root.selectAll('.finger-position').data(finger_positions).enter().append('g').classed('finger-position', true).attr({
         transform: function(arg$){
           var string_number, fret_number, dx, dy;
           string_number = arg$.string_number, fret_number = arg$.fret_number;
@@ -348,42 +347,47 @@
           dy = fret_number * style.fret_height + style.note_radius + 1;
           return "translate(" + dx + ", " + dy + ")";
         }
+      }).on('mouseover', function(it){
+        return dispatcher.mouseover(it.pitch);
+      }).on('mouseout', function(it){
+        return dispatcher.mouseout(it.pitch);
       });
-      this$.d3_notes.append('circle').attr({
+      d3_notes.append('circle').attr({
         r: style.note_radius
       });
-      note_labels = this$.d3_notes.append('text').classed('note', true).attr({
+      note_labels = d3_notes.append('text').classed('note', true).attr({
         y: 7
       });
       note_labels.append('tspan').classed('base', true);
       note_labels.append('tspan').classed('accidental', true);
-      this$.d3_notes.append('text').classed('fingering', true).attr({
+      d3_notes.append('text').classed('fingering', true).attr({
         y: 7
       }).text(function(it){
         return it.fingering_name;
       });
-      this$.d3_notes.append('text').classed('scale-degree', true).attr({
+      d3_notes.append('text').classed('scale-degree', true).attr({
         y: 7
       });
-      D3State.on('instrument.fingerboard', function(){
-        return this$.update_instrument();
+      dispatcher.on('update', function(){
+        return my.update();
       });
-      D3State.on('note_label', function(){
-        return this$.update();
-      });
-      D3State.on('scale.fingerboard', function(){
-        return this$.update();
-      });
-      D3State.on('scale_tonic.fingerboard', function(){
-        return this$.update();
-      });
-      this$.update_instrument();
-      return this$;
-    } function ctor$(){} ctor$.prototype = prototype;
-    prototype.update = function(){
-      var scale_tonic, scale, scale_pitches, res$, i$, ref$, len$, pitch, tonic, k, visible, labels;
-      scale_tonic = State.scale_tonic_pitch;
-      scale = State.scale;
+      return my.update();
+    }
+    my.attr = function(key, value){
+      if (!(key = 'note_label')) {
+        throw "Unknown key " + key;
+      }
+      if (!(arguments.length > 1)) {
+        return note_label;
+      }
+      note_label = value;
+      return my.update();
+    };
+    my.update = function(){
+      var scale_tonic, scale, scale_pitches, res$, i$, ref$, len$, pitch, tonic, k, visible, labels, scale_degree;
+      update_instrument();
+      scale_tonic = model.scale_tonic_pitch;
+      scale = model.scale;
       res$ = [];
       for (i$ = 0, len$ = (ref$ = scale.pitches).length; i$ < len$; ++i$) {
         pitch = ref$[i$];
@@ -391,28 +395,37 @@
       }
       scale_pitches = res$;
       tonic = scale_pitches[0];
-      State.note_label || (State.note_label = 'notes');
-      for (i$ = 0, len$ = (ref$ = this.label_sets).length; i$ < len$; ++i$) {
+      note_label = note_label || 'notes';
+      for (i$ = 0, len$ = (ref$ = label_sets).length; i$ < len$; ++i$) {
         k = ref$[i$];
-        visible = k === State.note_label.replace(/_/g, '-');
+        visible = k === note_label.replace(/_/g, '-');
         labels = d3.select('#fingerboard').selectAll('.' + k.replace(/s$/, ''));
         labels.attr('visibility', visible ? 'inherit' : 'hidden');
       }
-      return this.d3_notes.each(function(arg$){
-        var pitch, scale_degree, note_label;
+      scale_degree = function(pitch){
+        return pitch_class(pitch - tonic);
+      };
+      d3_notes.attr('class', function(it){
+        return "scale-note-" + pitch_class(it.pitch - tonic);
+      }).classed('finger-position', true).classed('scale', function(it){
+        return in$(it.pitch, scale_pitches);
+      }).classed('chromatic', function(it){
+        return !in$(it.pitch, scale_pitches);
+      }).select('.scale-degree').text(function(arg$){
+        var pitch;
         pitch = arg$.pitch;
-        scale_degree = pitch_class(pitch - tonic);
-        return note_label = d3.select(this).classed('scale', in$(pitch, scale_pitches)).classed('chromatic', !in$(pitch, scale_pitches)).classed('root', scale_degree === 0).classed('fifth', scale_degree === 7).select('.scale-degree').text(function(arg$){
-          var pitch;
-          pitch = arg$.pitch;
-          return ScaleDegreeNames[pitch_class(pitch - tonic)];
-        });
+        return ScaleDegreeNames[pitch_class(pitch - tonic)];
+      });
+      return d3_notes.each(function(arg$){
+        var pitch, note_labels;
+        pitch = arg$.pitch;
+        return note_labels = d3.select(this);
       });
     };
-    prototype.update_instrument = function(){
+    update_instrument = function(){
       var string_pitches, scale_tonic_name, pitch_name_options, select_pitch_name_component;
-      string_pitches = Instruments[State.instrument_name];
-      scale_tonic_name = State.scale_tonic_name;
+      string_pitches = model.instrument.string_pitches;
+      scale_tonic_name = model.scale_tonic_name;
       pitch_name_options = /b/.exec(scale_tonic_name)
         ? {
           sharp: true
@@ -420,45 +433,38 @@
         : {
           flat: true
         };
-      select_pitch_name_component = function(component){
-        return function(arg$){
-          var pitch, name;
-          pitch = arg$.pitch;
-          name = pitch_name(pitch, pitch_name_options);
-          switch (component) {
-          case 'base':
-            return name.replace(/(.).*/, '$1');
-          case 'accidental':
-            return name.replace(/^./, '');
-          }
-        };
-      };
-      this.d3_notes.each(function(note){
-        var string_number, fret_number, pitch, note_label;
+      select_pitch_name_component = curry$(function(component, arg$){
+        var pitch, name;
+        pitch = arg$.pitch;
+        name = pitch_name(pitch, pitch_name_options);
+        switch (component) {
+        case 'base':
+          return replace$.call(name, /[^\w]/, '');
+        case 'accidental':
+          return replace$.call(name, /[\w]/, '');
+        }
+      });
+      return d3_notes.each(function(note){
+        var string_number, fret_number, pitch, note_labels;
         string_number = note.string_number, fret_number = note.fret_number, pitch = note.pitch;
         note.pitch = pitch_class(string_pitches[string_number] + fret_number);
-        note_label = d3.select(this).select('.note');
-        note_label.select('.base').text(select_pitch_name_component('base'));
-        return note_label.select('.accidental').text(select_pitch_name_component('accidental'));
+        note_labels = d3.select(this).select('.note');
+        note_labels.select('.base').text(select_pitch_name_component('base'));
+        return note_labels.select('.accidental').text(select_pitch_name_component('accidental'));
       });
-      return this.update();
     };
-    return FingerboardView;
-  }());
-  NoteGridView = (function(){
-    NoteGridView.displayName = 'NoteGridView';
-    var prototype = NoteGridView.prototype, constructor = NoteGridView;
-    function NoteGridView(selection, style, reference){
-      var column_count, ref$, row_count, notes, res$, i$, len$, column, j$, ref1$, len1$, row, note, degree_groups, degree, this$ = this instanceof ctor$ ? this : new ctor$;
-      this$.selection = selection;
-      this$.style = style;
-      this$.reference = reference;
-      selection = this$.selection;
-      style = this$.style;
-      column_count = (ref$ = style.columns) != null
-        ? ref$
-        : 12 * 5;
-      row_count = (ref$ = style.rows) != null ? ref$ : 12;
+    return my;
+  };
+  d3.music.noteGrid = function(model, style, referenceElement){
+    var column_count, ref$, row_count, selection;
+    column_count = (ref$ = style.columns) != null
+      ? ref$
+      : 12 * 5;
+    row_count = (ref$ = style.rows) != null ? ref$ : 12;
+    selection = null;
+    function my(_selection){
+      var notes, res$, i$, ref$, len$, column, j$, ref1$, len1$, row, note, degree_groups, degree, root, note_views;
+      selection = _selection;
       res$ = [];
       for (i$ = 0, len$ = (ref$ = (fn$())).length; i$ < len$; ++i$) {
         column = ref$[i$];
@@ -482,11 +488,11 @@
         degree = degree_groups[i$];
         degree.scale_degree = Number(degree.key);
       }
-      this$.root = selection.append('svg').attr({
+      root = selection.append('svg').attr({
         width: column_count * style.string_width,
         height: row_count * style.fret_height
       });
-      this$.note_views = this$.root.selectAll('.scale-degree').data(degree_groups).enter().append('g').classed('scale-degree', true).selectAll('.note').data(function(it){
+      note_views = root.selectAll('.scale-degree').data(degree_groups).enter().append('g').classed('scale-degree', true).selectAll('.note').data(function(it){
         return it.values;
       }).enter().append('g').classed('note', true).attr({
         transform: function(arg$){
@@ -497,28 +503,18 @@
           return "translate(" + x + ", " + y + ")";
         }
       });
-      this$.note_views.append('circle').attr({
+      note_views.append('circle').attr({
         r: style.note_radius
       });
-      this$.note_views.append('text').attr({
+      note_views.append('text').attr({
         y: 7
       }).text(function(it){
         return ScaleDegreeNames[it.scale_degree];
       });
-      D3State.on('instrument.note_grid', function(){
-        return this$.update();
-      });
-      D3State.on('scale.note_grid', function(){
-        return this$.update();
-      });
-      D3State.on('scale_tonic.note_grid', function(){
-        return this$.update();
-      });
-      this$.update();
-      setTimeout(function(){
+      my.update();
+      return setTimeout(function(){
         return selection.classed('animate', true);
       }, 1);
-      return this$;
       function fn$(){
         var i$, to$, results$ = [];
         for (i$ = 0, to$ = column_count; i$ < to$; ++i$) {
@@ -533,11 +529,11 @@
         }
         return results$;
       }
-    } function ctor$(){} ctor$.prototype = prototype;
-    prototype.update_note_colors = function(){
+    }
+    function update_note_colors(){
       var scale_pitches;
-      scale_pitches = Scales[State.scale_class_name].pitches;
-      return this.selection.selectAll('.scale-degree').classed('chromatic', function(arg$){
+      scale_pitches = model.scale.pitches;
+      return selection.selectAll('.scale-degree').classed('chromatic', function(arg$){
         var scale_degree;
         scale_degree = arg$.scale_degree;
         return !in$(scale_degree, scale_pitches);
@@ -550,48 +546,169 @@
         scale_degree = arg$.scale_degree;
         return in$(scale_degree, scale_pitches) && scale_degree === 7;
       });
-    };
-    prototype.update = function(){
+    }
+    my.update = function(){
       var scale_tonic, bass_pitch, pos;
-      this.update_note_colors();
-      scale_tonic = State.scale_tonic_pitch;
-      bass_pitch = Instruments[State.instrument_name][0];
-      pos = $('#fingerboard').offset();
-      pos.left -= this.style.string_width * pitch_class((scale_tonic - bass_pitch) * 5);
-      return this.selection.each(function(){
+      update_note_colors();
+      scale_tonic = model.scale_tonic_pitch;
+      bass_pitch = model.instrument.string_pitches[0];
+      pos = referenceElement.offset();
+      pos.left -= style.string_width * pitch_class((scale_tonic - bass_pitch) * 5);
+      return selection.each(function(){
         return $(this).css({
           left: pos.left + 1,
           top: pos.top + 1
         });
       });
     };
-    return NoteGridView;
-  }());
-  d3.select('#fingerboard').call(FingerboardView, FingerboardStyle);
-  d3.select('#keyboard').call(KeyboardView, KeyboardStyle);
-  d3.select('#scales').call(ScaleSelectorView, ScaleStyle);
-  d3.select('#scale-notes').call(NoteGridView, FingerboardStyle);
-  $('#instruments .btn').click(function(){
-    $('#instruments .btn').removeClass('btn-default');
-    $(this).addClass('btn-default');
-    State.instrument_name = $(this).text();
-    return D3State.instrument();
+    return my;
+  };
+  module = angular.module('FingerboardScales', []);
+  this.FingerboardScalesCtrl = function($scope){
+    var noteGrid;
+    $('#about-text a').attr('target', '_blank');
+    $('#about').popover({
+      content: $('#about-text').html(),
+      html: true,
+      placement: 'bottom'
+    });
+    $scope.instrument = Instruments.Violin;
+    $scope.scales = Scales;
+    $scope.scale = Scales[0];
+    $scope.scale_tonic_name = 'C';
+    $scope.scale_tonic_pitch = 0;
+    $scope.setScale = function(s){
+      return $scope.scale = s;
+    };
+    $scope.hover = {};
+    $scope.bodyClassNames = function(){
+      var tonic, classes, n;
+      tonic = $scope.scale_tonic_pitch;
+      if ($scope.hover.scale_tonic_pitch >= 0) {
+        tonic = $scope.hover.scale_tonic_pitch;
+      }
+      classes = [];
+      classes = classes.concat((function(){
+        var i$, ref$, ref1$, len$, results$ = [];
+        for (i$ = 0, len$ = (ref$ = (ref1$ = $scope.hover.pitches) != null
+          ? ref1$
+          : $scope.scale.pitches).length; i$ < len$; ++i$) {
+          n = ref$[i$];
+          results$.push("scale-includes-" + pitch_class(n + tonic));
+        }
+        return results$;
+      }()));
+      if ($scope.hover.scale_tonic_pitch >= 0) {
+        classes.push("hover-scale-note-" + pitch_class($scope.hover.scale_tonic_pitch - $scope.scale_tonic_pitch));
+      }
+      return classes;
+    };
+    noteGrid = d3.music.noteGrid($scope, Style.fingerboard, $('#fingerboard'));
+    d3.select('#scale-notes').call(noteGrid);
+    $scope.$watch(function(){
+      return noteGrid.update();
+    });
+    $('#instruments .btn').click(function(){
+      var instrument_name;
+      $('#instruments .btn').removeClass('btn-default');
+      $(this).addClass('btn-default');
+      instrument_name = $(this).text();
+      return $scope.$apply(function(){
+        return $scope.instrument = Instruments[instrument_name];
+      });
+    });
+    return $('#fingerings .btn').click(function(){
+      var note_label_name;
+      $('#fingerings .btn').removeClass('btn-default');
+      $(this).addClass('btn-default');
+      note_label_name = $(this).text().replace(' ', '_').toLowerCase();
+      return $scope.$apply(function(){
+        return $scope.note_label = note_label_name;
+      });
+    });
+  };
+  module.directive('fingerboard', function(){
+    return {
+      restrict: 'CE',
+      link: function(scope, element, attrs){
+        var fingerboard;
+        fingerboard = d3.music.fingerboard(scope, Style.fingerboard);
+        d3.select(element.context).call(fingerboard);
+        scope.$watch(function(){
+          fingerboard.attr('note_label', scope.note_label);
+          return fingerboard.update();
+        });
+        fingerboard.dispatcher.on('mouseover', function(pitch){
+          return scope.$apply(function(){
+            return scope.hover.scale_tonic_pitch = pitch;
+          });
+        });
+        return fingerboard.dispatcher.on('mouseout', function(){
+          return scope.$apply(function(){
+            return scope.hover.scale_tonic_pitch = null;
+          });
+        });
+      }
+    };
   });
-  $('#fingerings .btn').click(function(){
-    $('#fingerings .btn').removeClass('btn-default');
-    $(this).addClass('btn-default');
-    State.note_label = $(this).text().replace(' ', '_').toLowerCase();
-    return D3State.note_label();
+  module.directive('pitchConstellation', function(){
+    return {
+      restrict: 'CE',
+      replace: true,
+      scope: {
+        pitches: '=',
+        hover: '='
+      },
+      transclude: true,
+      link: function(scope, element, attrs){
+        var constellation;
+        constellation = d3.music.pitchConstellation(scope.pitches, Style.scales);
+        return d3.select(element.context).call(constellation);
+      }
+    };
   });
-  $('#about-text a').attr('target', '_blank');
-  $('#about').popover({
-    content: $('#about-text').html(),
-    html: true,
-    placement: 'bottom'
+  module.directive('keyboard', function(){
+    return {
+      restrict: 'CE',
+      link: function(scope, element, attrs){
+        var keyboard;
+        keyboard = d3.music.keyboard(scope, Style.keyboard);
+        d3.select(element.context).call(keyboard);
+        keyboard.dispatcher.on('tonic', function(tonic_name){
+          return scope.$apply(function(){
+            scope.scale_tonic_name = tonic_name;
+            return scope.scale_tonic_pitch = pitch_name_to_number(tonic_name);
+          });
+        });
+        keyboard.dispatcher.on('mouseover', function(pitch){
+          return scope.$apply(function(){
+            return scope.hover.scale_tonic_pitch = pitch;
+          });
+        });
+        return keyboard.dispatcher.on('mouseout', function(){
+          return scope.$apply(function(){
+            return scope.hover.scale_tonic_pitch = null;
+          });
+        });
+      }
+    };
   });
   function in$(x, arr){
     var i = -1, l = arr.length >>> 0;
     while (++i < l) if (x === arr[i] && i in arr) return true;
     return false;
+  }
+  function curry$(f, bound){
+    var context,
+    _curry = function(args) {
+      return f.length > 1 ? function(){
+        var params = args ? args.concat() : [];
+        context = bound ? context || this : this;
+        return params.push.apply(params, arguments) <
+            f.length && arguments.length ?
+          _curry.call(context, params) : f.apply(context, params);
+      } : f;
+    };
+    return _curry();
   }
 }).call(this);
