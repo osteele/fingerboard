@@ -1,5 +1,5 @@
 (function(){
-  var SharpNoteNames, FlatNoteNames, ScaleDegreeNames, Scales, pitch_name_to_number, pitch_number_to_name, Instruments, Pitches, pitch_at, pitch_class, pitch_name, StringCount, FingerPositions, Style, module, replace$ = ''.replace;
+  var SharpNoteNames, FlatNoteNames, ScaleDegreeNames, Scales, pitch_name_to_number, pitch_number_to_name, Instruments, Pitches, pitch_at, pitch_class, pitch_name, FingerPositions, Style, module, replace$ = ''.replace;
   SharpNoteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'].map(function(it){
     return it.replace(/#/g, '\u266F');
   });
@@ -102,7 +102,6 @@
     }
     return name;
   };
-  StringCount = 4;
   FingerPositions = 7;
   Style = {
     fingerboard: {
@@ -111,6 +110,7 @@
       note_radius: 20
     },
     keyboard: {
+      octaves: 2,
       key_width: 25,
       key_spacing: 3,
       white_key_height: 120,
@@ -123,16 +123,31 @@
   };
   d3.music || (d3.music = {});
   d3.music.keyboard = function(model, attributes){
-    var style, key_count, dispatcher;
+    var style, octaves, stroke_width, dispatcher;
     style = attributes;
-    key_count = 7;
+    octaves = attributes.octaves;
+    stroke_width = 1;
     my.dispatcher = dispatcher = d3.dispatch('mouseover', 'mouseout', 'tonic', 'update');
     my.update = function(){
       return dispatcher.update();
     };
     function my(selection){
-      var keys, x, i$, len$, ref$, attrs, width, is_black_key, root, onclick, key_views, update;
-      keys = Pitches.map(function(pitch){
+      var keys, i, x, i$, len$, ref$, attrs, width, is_black_key, white_key_count, root, onclick, key_views, update;
+      keys = (function(){
+        var i$, ref$, len$, results$ = [];
+        for (i$ = 0, len$ = (ref$ = (fn$())).length; i$ < len$; ++i$) {
+          i = ref$[i$];
+          results$.push(pitch_class(i));
+        }
+        return results$;
+        function fn$(){
+          var i$, to$, results$ = [];
+          for (i$ = 0, to$ = 12 * octaves; i$ < to$; ++i$) {
+            results$.push(i$);
+          }
+          return results$;
+        }
+      }()).map(function(pitch){
         var is_black_key, note_name, height;
         is_black_key = FlatNoteNames[pitch].length > 1;
         note_name = pitch_name(pitch, {
@@ -152,7 +167,7 @@
           }
         };
       });
-      x = 1;
+      x = stroke_width;
       for (i$ = 0, len$ = keys.length; i$ < len$; ++i$) {
         ref$ = keys[i$], attrs = ref$.attrs, width = attrs.width, is_black_key = ref$.is_black_key;
         attrs.x = x;
@@ -166,8 +181,9 @@
       keys.sort(function(a, b){
         return a.is_black_key - b.is_black_key;
       });
+      white_key_count = octaves * 7;
       root = selection.append('svg').attr({
-        width: key_count * (style.key_width + style.key_spacing),
+        width: white_key_count * (style.key_width + style.key_spacing) - style.key_spacing + 2 * stroke_width,
         height: style.white_key_height + 1
       });
       onclick = function(arg$){
@@ -298,11 +314,12 @@
     d3_notes = null;
     note_label = null;
     function my(selection){
-      var finger_positions, i$, to$, string_number, j$, to1$, fret_number, pitch, fingering_name, root, note_labels;
+      var string_count, finger_positions, i$, string_number, j$, to$, fret_number, pitch, fingering_name, root, note_labels;
+      string_count = model.instrument.string_pitches.length;
       finger_positions = [];
-      for (i$ = 0, to$ = StringCount; i$ < to$; ++i$) {
+      for (i$ = 0; i$ < string_count; ++i$) {
         string_number = i$;
-        for (j$ = 0, to1$ = FingerPositions; j$ <= to1$; ++j$) {
+        for (j$ = 0, to$ = FingerPositions; j$ <= to$; ++j$) {
           fret_number = j$;
           pitch = pitch_at(string_number, fret_number);
           fingering_name = String(Math.ceil(fret_number / 2));
@@ -315,17 +332,17 @@
         }
       }
       root = selection.append('svg').attr({
-        width: StringCount * style.string_width
+        width: string_count * style.string_width
       }).attr({
-        height: FingerPositions * style.fret_height
+        height: (1 + FingerPositions) * style.fret_height
       });
       root.append('line').classed('nut', true).attr({
-        x2: StringCount * style.string_width,
+        x2: string_count * style.string_width,
         transform: "translate(0, " + (style.fret_height - 5) + ")"
       });
       root.selectAll('.string').data((function(){
         var i$, to$, results$ = [];
-        for (i$ = 0, to$ = StringCount; i$ < to$; ++i$) {
+        for (i$ = 0, to$ = string_count; i$ < to$; ++i$) {
           results$.push(i$);
         }
         return results$;
@@ -408,7 +425,7 @@
         return in$(it.pitch, scale_pitches);
       }).classed('chromatic', function(it){
         return !in$(it.pitch, scale_pitches);
-      }).select('.scale-degree').text(function(arg$){
+      }).select('.scale-degree').text("").text(function(arg$){
         var pitch;
         pitch = arg$.pitch;
         return ScaleDegreeNames[pitch_class(pitch - tonic)];
@@ -637,7 +654,8 @@
         return $scope.note_label = note_label_name;
       });
     });
-    return $(document).bind('touchmove', false);
+    $(document).bind('touchmove', false);
+    return $('body').removeClass('loading');
   };
   module.directive('fingerboard', function(){
     return {
