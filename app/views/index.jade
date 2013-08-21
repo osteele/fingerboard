@@ -8,13 +8,13 @@ html(lang="en", ng-app="FingerboardScales")
     meta(name="format-detection", content="telephone=no")
     link(rel="icon", type="image/png", href="images/fretboard-icon.png")
 
-    link(href="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.0.0-rc1/css/bootstrap.min.css", rel="stylesheet", type="text/css")
+    link(href="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.0.0-rc2/css/bootstrap.min.css", rel="stylesheet", type="text/css")
     link(href="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/font-awesome/3.2.1/css/font-awesome.min.css", rel="stylesheet")
     link(href="http://fonts.googleapis.com/css?family=Abel|Open+Sans:400,600", rel="stylesheet")
     link(href="./main.css", rel="stylesheet", type="text/css")
 
     script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js", defer)
-    script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.0.0-rc1/js/bootstrap.min.js", defer)
+    script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.0.0-rc2/js/bootstrap.min.js", defer)
     script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/angular.js/1.1.5/angular.min.js", defer)
     script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/d3/3.2.2/d3.v3.min.js", defer)
 
@@ -41,22 +41,23 @@ html(lang="en", ng-app="FingerboardScales")
       keyboard#keyboard
 
     .module.panel
-      h2.panel-title Scale Class
+      h2.panel-title Scales
       #scales.scales
-        .scale(ng-repeat="s in scales", ng-class="{selected: s == scale || s == scale.parent}", ng-click="setScale(s)",
+        .scale.pull-left(ng-repeat="s in scales", ng-class="{selected: s == scale || s == scale.parent}", ng-click="setScale(s)",
             ng-mouseover="hover.pitches = s.pitches", ng-mouseout="hover.pitches = null")
           h3 {{s.name}}
           pitch-constellation(pitches="s.pitches")
 
-    .module.panel(ng-show="scale.modes || scale.parent.modes")
-      h2.panel-title Modes
+      .clearfix
+      hr(ng-show="scale.modes || scale.parent.modes")
+      h2.panel-title Modes of the {{scale.name}} Scale
       #modes.scales
-        .scale(ng-repeat="s in (scale.modes || scale.parent.modes)", ng-class="{selected: s == scale}", ng-click="setScale(s)",
+        .scale.pull-left(ng-repeat="s in (scale.modes || scale.parent.modes)", ng-class="{selected: s == scale}", ng-click="setScale(s)",
             ng-mouseover="hover.pitches = s.pitches", ng-mouseout="hover.pitches = null")
           h3 {{s.name}}
           pitch-constellation(pitches="s.pitches")
 
-    #scale-notes
+    #scale-notes.visible-lg
 
     a#fork-me(href="https://github.com/osteele/fingerboard")
 
