@@ -84,6 +84,8 @@
       Scales[name] = scale;
     }
     rotate = function(pitches, i){
+      var ref$;
+      i = ((i) % (ref$ = pitches.length) + ref$) % ref$;
       pitches = pitches.slice(i).concat(slice$.call(pitches, 0, i));
       return pitches.map(function(it){
         return pitch_class(it - pitches[0]);
@@ -91,12 +93,13 @@
     };
     for (i$ = 0, len$ = (ref$ = Scales).length; i$ < len$; ++i$) {
       scale = ref$[i$], name = scale.name, mode_names = scale.mode_names, mode_of = scale.mode_of, pitches = scale.pitches;
-      if (mode_of != null) {
-        base = Scales[mode_of];
-        i = (fn$()).filter(fn1$)[0];
-        mode_names = scale.mode_names = base.mode_names.slice(i).concat(slice$.call(base.mode_names, 0, i));
-      }
+      scale.base = base = Scales[mode_of];
+      mode_names || (mode_names = base != null ? base.mode_names : void 8);
       if (mode_names != null) {
+        scale.mode_index = 0;
+        if (base != null) {
+          scale.mode_index = (fn$()).filter(fn1$)[0];
+        }
         results$.push(scale.modes = (fn2$()));
       }
     }
@@ -118,7 +121,7 @@
         name = ref$[i$];
         results$.push({
           name: name.replace(/#/, '\u266F').replace(/\bb(\d)/, '\u266D$1'),
-          pitches: rotate(pitches, i),
+          pitches: rotate((base != null ? base.pitches : void 8) || pitches, i),
           parent: scale
         });
       }
@@ -647,7 +650,7 @@
     $scope.scale_tonic_pitch = 0;
     $scope.setScale = function(s){
       var ref$;
-      return $scope.scale = ((ref$ = s.modes) != null ? ref$[0] : void 8) || s;
+      return $scope.scale = ((ref$ = s.modes) != null ? ref$[s.mode_index] : void 8) || s;
     };
     $scope.hover = {
       pitches: null,
