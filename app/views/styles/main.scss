@@ -37,7 +37,7 @@ body.loading .module { display: none; }
 h2.panel-title span.dropdown a.dropdown-toggle { color: rgb(51, 51, 51) }
 
 #instrument-selector:hover {color: blue; background: lightGray; text-decoration: underline}
-#instrument-selector .dropdown-toggle::before {content: "\25BC";}
+#instrument-selector .dropdown-toggle::before {content: "\25B6";}
 
 #templates { display: none; }
 
@@ -168,11 +168,11 @@ svg text {
   &.scale {
     circle { fill: lightGreen; }
 
-    &.scale-note-degree-0 {
+    &.relative-pitch-class-0 {
       circle { fill: $root-color; }
     }
 
-    &.scale-note-degree-7 {
+    &.relative-pitch-class-7 {
       circle { fill: $fifth-color; }
     }
   }
@@ -238,30 +238,30 @@ svg text {
 }
 
 @for $i from 0 through 11 {
-  body.scale-includes-pitch-#{$i} {
-    #keyboard .scale-note-pitch-#{$i}.white-key rect {
+  body.scale-includes-pitch-class-#{$i} {
+    #keyboard .pitch-class-#{$i}.white-key rect {
       fill: lighten(green, 65%);
     }
 
-    #keyboard .scale-note-pitch-#{$i}.black-key rect {
+    #keyboard .pitch-class-#{$i}.black-key rect {
       fill: darken(green, 10%);
     }
   }
 
-  body.hover-scale-note-pitch-#{$i} {
-    #fingerboard .scale-note-pitch-#{$i} {
+  body.hover-note-pitch-class-#{$i} {
+    #fingerboard .pitch-class-#{$i} {
       stroke-width: 2px;
       filter:url(#hovered-scale-note);
     }
 
-    #keyboard .scale-note-pitch-#{$i} {
+    #keyboard .pitch-class-#{$i} {
       stroke-width: 3px;
       filter:url(#hovered-scale-note);
     }
   }
 
-  body.hover-scale-note-degree-#{$i} {
-    .scale .scale-note-degree-#{$i} {
+  body.hover-note-relative-pitch-class-#{$i} {
+    .scale .relative-pitch-class-#{$i} {
       stroke-width: 2px;
       filter:url(#hovered-scale-note);
     }
