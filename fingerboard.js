@@ -1,5 +1,5 @@
 (function(){
-  var SharpNoteNames, FlatNoteNames, ScaleDegreeNames, Pitches, pitch_name_to_number, pitch_number_to_name, pitch_class, pitch_name, Scales, Instruments, pitch_at, FingerPositions, Style, module, slice$ = [].slice, join$ = [].join, replace$ = ''.replace;
+  var SharpNoteNames, FlatNoteNames, ScaleDegreeNames, Pitches, pitch_name_to_number, pitch_number_to_name, pitch_to_pitch_class, pitch_name, Scales, Instruments, fingerboard_position_pitch, FingerPositions, Style, module, slice$ = [].slice, join$ = [].join, replace$ = ''.replace;
   SharpNoteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'].map(function(it){
     return it.replace(/#/, '\u266F');
   });
@@ -20,18 +20,19 @@
   };
   pitch_number_to_name = function(pitch_number){
     var pitch;
-    pitch = pitch_class(pitch_number);
+    pitch = pitch_to_pitch_class(pitch_number);
     return SharpNoteNames.indexOf(pitch) || FlatNoteNames.indexOf(pitch);
   };
-  pitch_class = function(pitch){
+  pitch_to_pitch_class = function(pitch){
     var ref$;
     return ((pitch) % (ref$ = 12) + ref$) % ref$;
   };
   pitch_name = function(pitch, options){
-    var flatName, sharpName, name;
+    var pitch_class, flatName, sharpName, name;
     options == null && (options = {});
-    flatName = FlatNoteNames[pitch];
-    sharpName = SharpNoteNames[pitch];
+    pitch_class = pitch_to_pitch_class(pitch);
+    flatName = FlatNoteNames[pitch_class];
+    sharpName = SharpNoteNames[pitch_class];
     name = options.sharp ? sharpName : flatName;
     if (options.flat && options.sharp && flatName !== sharpName) {
       name = flatName + "/\n" + sharpName;
@@ -41,58 +42,58 @@
   Scales = [
     {
       name: 'Diatonic Major',
-      pitches: [0, 2, 4, 5, 7, 9, 11],
+      pitch_classes: [0, 2, 4, 5, 7, 9, 11],
       mode_names: ['Ionian', 'Dorian', 'Phrygian', 'Lydian', 'Mixolydian', 'Aeolian', 'Locrian']
     }, {
       name: 'Natural Minor',
-      pitches: [0, 2, 3, 5, 7, 8, 10],
+      pitch_classes: [0, 2, 3, 5, 7, 8, 10],
       mode_of: 'Diatonic Major'
     }, {
       name: 'Major Pentatonic',
-      pitches: [0, 2, 4, 7, 9],
+      pitch_classes: [0, 2, 4, 7, 9],
       mode_names: ['Major Pentatonic', 'Suspended Pentatonic', 'Man Gong', 'Ritusen', 'Minor Pentatonic']
     }, {
       name: 'Minor Pentatonic',
-      pitches: [0, 3, 5, 7, 10],
+      pitch_classes: [0, 3, 5, 7, 10],
       mode_of: 'Major Pentatonic'
     }, {
       name: 'Melodic Minor',
-      pitches: [0, 2, 3, 5, 7, 9, 11],
+      pitch_classes: [0, 2, 3, 5, 7, 9, 11],
       mode_names: ['Jazz Minor', 'Dorian b2', 'Lydian Augmented', 'Lydian Dominant', 'Mixolydian b6', 'Semilocrian', 'Superlocrian']
     }, {
       name: 'Harmonic Minor',
-      pitches: [0, 2, 3, 5, 7, 8, 11],
+      pitch_classes: [0, 2, 3, 5, 7, 8, 11],
       mode_names: ['Harmonic Minor', 'Locrian #6', 'Ionian Augmented', 'Romanian', 'Phrygian Dominant', 'Lydian #2', 'Ultralocrian']
     }, {
       name: 'Blues',
-      pitches: [0, 3, 5, 6, 7, 10]
+      pitch_classes: [0, 3, 5, 6, 7, 10]
     }, {
       name: 'Freygish',
-      pitches: [0, 1, 4, 5, 7, 8, 10]
+      pitch_classes: [0, 1, 4, 5, 7, 8, 10]
     }, {
       name: 'Whole Tone',
-      pitches: [0, 2, 4, 6, 8, 10]
+      pitch_classes: [0, 2, 4, 6, 8, 10]
     }, {
       name: 'Octatonic',
-      pitches: [0, 2, 3, 5, 6, 8, 9, 11]
+      pitch_classes: [0, 2, 3, 5, 6, 8, 9, 11]
     }
   ];
   (function(){
-    var i$, ref$, len$, scale, name, mode_names, pitches, rotate, mode_of, base, i, results$ = [];
+    var i$, ref$, len$, scale, name, mode_names, pitch_classes, rotate, mode_of, base, i, results$ = [];
     for (i$ = 0, len$ = (ref$ = Scales).length; i$ < len$; ++i$) {
-      scale = ref$[i$], name = scale.name, mode_names = scale.mode_names, pitches = scale.pitches;
+      scale = ref$[i$], name = scale.name, mode_names = scale.mode_names, pitch_classes = scale.pitch_classes;
       Scales[name] = scale;
     }
-    rotate = function(pitches, i){
+    rotate = function(pitch_classes, i){
       var ref$;
-      i = ((i) % (ref$ = pitches.length) + ref$) % ref$;
-      pitches = pitches.slice(i).concat(slice$.call(pitches, 0, i));
-      return pitches.map(function(it){
-        return pitch_class(it - pitches[0]);
+      i = ((i) % (ref$ = pitch_classes.length) + ref$) % ref$;
+      pitch_classes = pitch_classes.slice(i).concat(slice$.call(pitch_classes, 0, i));
+      return pitch_classes.map(function(it){
+        return pitch_to_pitch_class(it - pitch_classes[0]);
       });
     };
     for (i$ = 0, len$ = (ref$ = Scales).length; i$ < len$; ++i$) {
-      scale = ref$[i$], name = scale.name, mode_names = scale.mode_names, mode_of = scale.mode_of, pitches = scale.pitches;
+      scale = ref$[i$], name = scale.name, mode_names = scale.mode_names, mode_of = scale.mode_of, pitch_classes = scale.pitch_classes;
       scale.base = base = Scales[mode_of];
       mode_names || (mode_names = base != null ? base.mode_names : void 8);
       if (mode_names != null) {
@@ -106,13 +107,13 @@
     return results$;
     function fn$(){
       var i$, to$, results$ = [];
-      for (i$ = 0, to$ = pitches.length; i$ < to$; ++i$) {
+      for (i$ = 0, to$ = pitch_classes.length; i$ < to$; ++i$) {
         results$.push(i$);
       }
       return results$;
     }
     function fn1$(i){
-      return join$.call(rotate(base.pitches, i), ',') === join$.call(pitches, ',');
+      return join$.call(rotate(base.pitch_classes, i), ',') === join$.call(pitch_classes, ',');
     }
     function fn2$(){
       var i$, ref$, len$, results$ = [];
@@ -121,7 +122,7 @@
         name = ref$[i$];
         results$.push({
           name: name.replace(/#/, '\u266F').replace(/\bb(\d)/, '\u266D$1'),
-          pitches: rotate((base != null ? base.pitches : void 8) || pitches, i),
+          pitch_classes: rotate((base != null ? base.pitch_classes : void 8) || pitch_classes, i),
           parent: scale
         });
       }
@@ -148,8 +149,10 @@
     }
     return results$;
   })();
-  pitch_at = function(string_number, fret_number){
-    return pitch_class(string_number * 7 + fret_number);
+  fingerboard_position_pitch = function(arg$){
+    var instrument, string_number, fret_number;
+    instrument = arg$.instrument, string_number = arg$.string_number, fret_number = arg$.fret_number;
+    return instrument.string_pitches[string_number] + fret_number;
   };
   FingerPositions = 7;
   Style = {
@@ -181,24 +184,17 @@
       return dispatcher.update();
     };
     function my(selection){
-      var keys, i, x, i$, len$, ref$, attrs, width, is_black_key, white_key_count, root, onclick, key_views, update;
+      var keys, x, i$, len$, ref$, attrs, width, is_black_key, white_key_count, root, onclick, key_views, update;
       keys = (function(){
-        var i$, ref$, len$, results$ = [];
-        for (i$ = 0, len$ = (ref$ = (fn$())).length; i$ < len$; ++i$) {
-          i = ref$[i$];
-          results$.push(pitch_class(i));
+        var i$, to$, results$ = [];
+        for (i$ = 0, to$ = 12 * octaves; i$ < to$; ++i$) {
+          results$.push(i$);
         }
         return results$;
-        function fn$(){
-          var i$, to$, results$ = [];
-          for (i$ = 0, to$ = 12 * octaves; i$ < to$; ++i$) {
-            results$.push(i$);
-          }
-          return results$;
-        }
       }()).map(function(pitch){
-        var is_black_key, note_name, height;
-        is_black_key = FlatNoteNames[pitch].length > 1;
+        var pitch_class, is_black_key, note_name, height;
+        pitch_class = pitch_to_pitch_class(pitch);
+        is_black_key = FlatNoteNames[pitch_class].length > 1;
         note_name = pitch_name(pitch, {
           flat: true
         });
@@ -207,6 +203,7 @@
           : style.white_key_height;
         return {
           pitch: pitch,
+          pitch_class: pitch_class,
           name: note_name,
           is_black_key: is_black_key,
           attrs: {
@@ -244,7 +241,7 @@
         return dispatcher.tonic(model.scale_tonic_name);
       };
       key_views = root.selectAll('.piano-key').data(keys).enter().append('g').attr('class', function(it){
-        return "scale-note-pitch-" + it.pitch;
+        return "pitch-" + it.pitch + " pitch-class-" + it.pitch_class;
       }).classed('piano-key', true).classed('black-key', function(it){
         return it.is_black_key;
       }).classed('white-key', function(it){
@@ -276,7 +273,7 @@
           return attrs.height;
         }
       });
-      key_views.append('text').attr({
+      key_views.append('text').classed('flat-label', true).attr({
         x: function(arg$){
           var attrs, x, width;
           attrs = arg$.attrs, x = attrs.x, width = attrs.width;
@@ -287,24 +284,30 @@
           attrs = arg$.attrs, y = attrs.y, height = attrs.height;
           return y + height - 6;
         }
-      }).text(function(arg$){
-        var name;
-        name = arg$.name;
-        return name;
+      }).text(function(it){
+        return FlatNoteNames[it.pitch_class];
+      });
+      key_views.append('text').classed('sharp-label', true).attr({
+        x: function(arg$){
+          var attrs, x, width;
+          attrs = arg$.attrs, x = attrs.x, width = attrs.width;
+          return x + width / 2;
+        },
+        y: function(arg$){
+          var attrs, y, height;
+          attrs = arg$.attrs, y = attrs.y, height = attrs.height;
+          return y + height - 6;
+        }
+      }).text(function(it){
+        return SharpNoteNames[it.pitch_class];
       });
       update = function(){
-        return key_views.classed('root', function(arg$){
-          var pitch;
-          pitch = arg$.pitch;
-          return pitch === model.scale_tonic_pitch;
-        }).classed('scale-note', function(arg$){
-          var pitch;
-          pitch = arg$.pitch;
-          return in$(pitch_class(pitch - model.scale_tonic_pitch), model.scale.pitches);
-        }).classed('fifth', function(arg$){
-          var pitch;
-          pitch = arg$.pitch;
-          return pitch_class(pitch - model.scale_tonic_pitch) === 7;
+        return key_views.classed('root', function(it){
+          return pitch_to_pitch_class(it.pitch - model.scale_tonic_pitch) === 0;
+        }).classed('scale-note', function(it){
+          return in$(pitch_to_pitch_class(it.pitch - model.scale_tonic_pitch), model.scale.pitch_classes);
+        }).classed('fifth', function(it){
+          return pitch_to_pitch_class(it.pitch - model.scale_tonic_pitch) === 7;
         });
       };
       dispatcher.on('update', function(){
@@ -314,7 +317,7 @@
     }
     return my;
   };
-  d3.music.pitchConstellation = function(pitches, attributes){
+  d3.music.pitchConstellation = function(pitch_classes, attributes){
     var style;
     style = attributes;
     return function(selection){
@@ -328,17 +331,17 @@
       }).append('g').attr({
         transform: "translate(" + pc_width / 2 + ", " + pc_width / 2 + ")"
       });
-      endpoints = Pitches.map(function(pitch){
+      endpoints = Pitches.map(function(pitch_class){
         var a, x, y, chromatic;
-        a = (pitch - 3) * 2 * Math.PI / 12;
+        a = (pitch_class - 3) * 2 * Math.PI / 12;
         x = Math.cos(a) * r;
         y = Math.sin(a) * r;
-        chromatic = !in$(pitch, pitches);
+        chromatic = !in$(pitch_class, pitch_classes);
         return {
           x: x,
           y: y,
           chromatic: chromatic,
-          pitch: pitch
+          pitch_class: pitch_class
         };
       });
       root.selectAll('line').data(endpoints).enter().append('line').classed('chromatic', function(it){
@@ -349,13 +352,13 @@
         return it.y;
       });
       return root.selectAll('circle').data(endpoints).enter().append('circle').attr('class', function(it){
-        return "scale-note-degree-" + it.pitch;
+        return "relative-pitch-class-" + it.pitch_class;
       }).classed('chromatic', function(it){
         return it.chromatic;
       }).classed('root', function(it){
-        return it.pitch === 0;
+        return it.pitch_class === 0;
       }).classed('fifth', function(it){
-        return it.pitch === 7;
+        return it.pitch_class === 7;
       }).attr('cx', function(it){
         return it.x;
       }).attr('cy', function(it){
@@ -364,27 +367,32 @@
     };
   };
   d3.music.fingerboard = function(model, attributes){
-    var style, label_sets, dispatcher, d3_notes, note_label, update_instrument;
+    var style, label_sets, dispatcher, instrument, d3_notes, note_label, update_instrument;
     style = attributes;
     label_sets = ['notes', 'fingerings', 'scale-degrees'];
     dispatcher = my.dispatcher = d3.dispatch('mouseover', 'mouseout', 'update');
+    instrument = model.instrument;
     d3_notes = null;
     note_label = null;
     function my(selection){
-      var string_count, finger_positions, i$, string_number, j$, to$, fret_number, pitch, fingering_name, root, note_labels;
+      var string_count, finger_positions, i$, string_number, j$, to$, fret_number, pitch, root, note_labels;
       string_count = model.instrument.string_pitches.length;
       finger_positions = [];
       for (i$ = 0; i$ < string_count; ++i$) {
         string_number = i$;
         for (j$ = 0, to$ = FingerPositions; j$ <= to$; ++j$) {
           fret_number = j$;
-          pitch = pitch_at(string_number, fret_number);
-          fingering_name = String(Math.ceil(fret_number / 2));
+          pitch = fingerboard_position_pitch({
+            instrument: instrument,
+            string_number: string_number,
+            fret_number: fret_number
+          });
           finger_positions.push({
             string_number: string_number,
             fret_number: fret_number,
             pitch: pitch,
-            fingering_name: fingering_name
+            pitch_class: pitch_to_pitch_class(pitch),
+            fingering_name: String(Math.ceil(fret_number / 2))
           });
         }
       }
@@ -431,6 +439,8 @@
       });
       note_labels.append('tspan').classed('base', true);
       note_labels.append('tspan').classed('accidental', true);
+      note_labels.append('tspan').classed('accidental', true).classed('flat', true).classed('flat-label', true);
+      note_labels.append('tspan').classed('accidental', true).classed('sharp', true).classed('sharp-label', true);
       d3_notes.append('text').classed('fingering', true).attr({
         y: 7
       }).text(function(it){
@@ -455,17 +465,11 @@
       return my.update();
     };
     my.update = function(){
-      var scale_tonic, scale, scale_pitches, res$, i$, ref$, len$, pitch, tonic, k, visible, labels, scale_degree;
+      var scale, scale_pitch_classes, scale_tonic, i$, ref$, len$, k, visible, labels;
       update_instrument();
-      scale_tonic = model.scale_tonic_pitch;
       scale = model.scale;
-      res$ = [];
-      for (i$ = 0, len$ = (ref$ = scale.pitches).length; i$ < len$; ++i$) {
-        pitch = ref$[i$];
-        res$.push(pitch_class(pitch + scale_tonic));
-      }
-      scale_pitches = res$;
-      tonic = scale_pitches[0];
+      scale_pitch_classes = scale.pitch_classes;
+      scale_tonic = model.scale_tonic_pitch;
       note_label = note_label || 'notes';
       for (i$ = 0, len$ = (ref$ = label_sets).length; i$ < len$; ++i$) {
         k = ref$[i$];
@@ -473,19 +477,19 @@
         labels = d3.select('#fingerboard').selectAll('.' + k.replace(/s$/, ''));
         labels.attr('visibility', visible ? 'inherit' : 'hidden');
       }
-      scale_degree = function(pitch){
-        return pitch_class(pitch - tonic);
-      };
-      d3_notes.attr('class', function(it){
-        return "scale-note-pitch-" + it.pitch + " scale-note-degree-" + pitch_class(it.pitch - tonic);
-      }).classed('finger-position', true).classed('scale', function(it){
-        return in$(it.pitch, scale_pitches);
-      }).classed('chromatic', function(it){
-        return !in$(it.pitch, scale_pitches);
-      }).select('.scale-degree').text("").text(function(arg$){
+      d3_notes.each(function(note){
         var pitch;
-        pitch = arg$.pitch;
-        return ScaleDegreeNames[pitch_class(pitch - tonic)];
+        pitch = note.pitch;
+        return note.relative_pitch_class = pitch_to_pitch_class(pitch - scale_tonic);
+      });
+      d3_notes.attr('class', function(it){
+        return "pitch-class-" + it.pitch_class + " relative-pitch-class-" + it.relative_pitch_class;
+      }).classed('finger-position', true).classed('scale', function(it){
+        return in$(it.relative_pitch_class, scale_pitch_classes);
+      }).classed('chromatic', function(it){
+        return !in$(it.relative_pitch_class, scale_pitch_classes);
+      }).select('.scale-degree').text("").text(function(it){
+        return ScaleDegreeNames[it.relative_pitch_class];
       });
       return d3_notes.each(function(arg$){
         var pitch, note_labels;
@@ -494,8 +498,22 @@
       });
     };
     update_instrument = function(){
-      var string_pitches, scale_tonic_name, pitch_name_options, select_pitch_name_component;
-      string_pitches = model.instrument.string_pitches;
+      var instrument, string_pitches, scale_tonic_name, pitch_name_options, select_pitch_name_component;
+      if (instrument === model.instrument) {
+        return;
+      }
+      instrument = model.instrument;
+      string_pitches = instrument.string_pitches;
+      d3_notes.each(function(note){
+        var string_number, fret_number;
+        string_number = note.string_number, fret_number = note.fret_number;
+        note.pitch = fingerboard_position_pitch({
+          instrument: instrument,
+          string_number: string_number,
+          fret_number: fret_number
+        });
+        return note.pitch_class = pitch_to_pitch_class(note.pitch);
+      });
       scale_tonic_name = model.scale_tonic_name;
       pitch_name_options = /\u266D/.exec(scale_tonic_name)
         ? {
@@ -505,23 +523,27 @@
           sharp: true
         };
       select_pitch_name_component = curry$(function(component, arg$){
-        var pitch, name;
-        pitch = arg$.pitch;
+        var pitch, pitch_class, name;
+        pitch = arg$.pitch, pitch_class = arg$.pitch_class;
         name = pitch_name(pitch, pitch_name_options);
         switch (component) {
         case 'base':
           return replace$.call(name, /[^\w]/, '');
         case 'accidental':
           return replace$.call(name, /[\w]/, '');
+        case 'flat':
+          return FlatNoteNames[pitch_class].slice(1);
+        case 'sharp':
+          return SharpNoteNames[pitch_class].slice(1);
         }
       });
       return d3_notes.each(function(note){
         var string_number, fret_number, pitch, note_labels;
         string_number = note.string_number, fret_number = note.fret_number, pitch = note.pitch;
-        note.pitch = pitch_class(string_pitches[string_number] + fret_number);
         note_labels = d3.select(this).select('.note');
         note_labels.select('.base').text(select_pitch_name_component('base'));
-        return note_labels.select('.accidental').text(select_pitch_name_component('accidental'));
+        note_labels.select('.flat').text(select_pitch_name_component('flat'));
+        return note_labels.select('.sharp').text(select_pitch_name_component('sharp'));
       });
     };
     return my;
@@ -550,14 +572,14 @@
       notes = res$;
       for (i$ = 0, len$ = notes.length; i$ < len$; ++i$) {
         note = notes[i$];
-        note.scale_degree = pitch_class(note.column * 7 + note.row);
+        note.relative_pitch_class = pitch_to_pitch_class(note.column * 7 + note.row);
       }
       degree_groups = d3.nest().key(function(it){
-        return it.scale_degree;
+        return it.relative_pitch_class;
       }).entries(notes);
       for (i$ = 0, len$ = degree_groups.length; i$ < len$; ++i$) {
         degree = degree_groups[i$];
-        degree.scale_degree = Number(degree.key);
+        degree.relative_pitch_class = Number(degree.key);
       }
       root = selection.append('svg').attr({
         width: column_count * style.string_width,
@@ -580,7 +602,7 @@
       note_views.append('text').attr({
         y: 7
       }).text(function(it){
-        return ScaleDegreeNames[it.scale_degree];
+        return ScaleDegreeNames[it.relative_pitch_class];
       });
       my.update();
       return setTimeout(function(){
@@ -602,20 +624,20 @@
       }
     }
     function update_note_colors(){
-      var scale_pitches;
-      scale_pitches = model.scale.pitches;
+      var scale_pitch_classes;
+      scale_pitch_classes = model.scale.pitch_classes;
       return selection.selectAll('.scale-degree').classed('chromatic', function(arg$){
-        var scale_degree;
-        scale_degree = arg$.scale_degree;
-        return !in$(scale_degree, scale_pitches);
+        var relative_pitch_class;
+        relative_pitch_class = arg$.relative_pitch_class;
+        return !in$(relative_pitch_class, scale_pitch_classes);
       }).classed('tonic', function(arg$){
-        var scale_degree;
-        scale_degree = arg$.scale_degree;
-        return in$(scale_degree, scale_pitches) && scale_degree === 0;
+        var relative_pitch_class;
+        relative_pitch_class = arg$.relative_pitch_class;
+        return in$(relative_pitch_class, scale_pitch_classes) && relative_pitch_class === 0;
       }).classed('fifth', function(arg$){
-        var scale_degree;
-        scale_degree = arg$.scale_degree;
-        return in$(scale_degree, scale_pitches) && scale_degree === 7;
+        var relative_pitch_class;
+        relative_pitch_class = arg$.relative_pitch_class;
+        return in$(relative_pitch_class, scale_pitch_classes) && relative_pitch_class === 7;
       });
     }
     my.update = function(){
@@ -624,7 +646,7 @@
       scale_tonic = model.scale_tonic_pitch;
       bass_pitch = model.instrument.string_pitches[0];
       pos = referenceElement.offset();
-      pos.left -= style.string_width * pitch_class((scale_tonic - bass_pitch) * 5);
+      pos.left -= style.string_width * pitch_to_pitch_class((scale_tonic - bass_pitch) * 5);
       return selection.each(function(){
         return $(this).css({
           left: pos.left + 1,
@@ -645,7 +667,7 @@
     $scope.scale_tonic_name = 'C';
     $scope.scale_tonic_pitch = 0;
     $scope.hover = {
-      pitches: null,
+      pitch_classes: null,
       scale_tonic_pitch: null
     };
     $scope.setInstrument = function(instr){
@@ -658,35 +680,36 @@
       return $scope.scale = ((ref$ = s.modes) != null ? ref$[s.mode_index] : void 8) || s;
     };
     $scope.bodyClassNames = function(){
-      var tonic, ref$, pitches, classes, n;
-      tonic = (ref$ = $scope.hover.scale_tonic_pitch) != null
+      var hover, scale_tonic, ref$, scale_pitch_classes, ref1$, classes, show_sharps, n;
+      hover = $scope.hover;
+      scale_tonic = (ref$ = hover.scale_tonic_pitch) != null
         ? ref$
         : $scope.scale_tonic_pitch;
-      pitches = (ref$ = $scope.hover.pitches) != null
+      scale_pitch_classes = (ref$ = (ref1$ = hover.scale) != null ? ref1$.pitch_classes : void 8) != null
         ? ref$
-        : $scope.scale.pitches;
+        : $scope.scale.pitch_classes;
       classes = [];
+      show_sharps = !(ref$ = FlatNoteNames[pitch_to_pitch_class(scale_tonic)].length === 1) !== !(ref1$ = /F/.exec(FlatNoteNames[pitch_to_pitch_class(scale_tonic)])) && (ref$ || ref1$);
+      classes.push(show_sharps ? 'hide-flat-labels' : 'hide-sharp-labels');
       classes = classes.concat((function(){
         var i$, ref$, len$, results$ = [];
-        for (i$ = 0, len$ = (ref$ = pitches).length; i$ < len$; ++i$) {
+        for (i$ = 0, len$ = (ref$ = scale_pitch_classes).length; i$ < len$; ++i$) {
           n = ref$[i$];
-          results$.push("scale-includes-degree-" + n);
+          results$.push("scale-includes-relative-pitch-class-" + n);
         }
         return results$;
       }()));
       classes = classes.concat((function(){
         var i$, ref$, len$, results$ = [];
-        for (i$ = 0, len$ = (ref$ = pitches).length; i$ < len$; ++i$) {
+        for (i$ = 0, len$ = (ref$ = scale_pitch_classes).length; i$ < len$; ++i$) {
           n = ref$[i$];
-          results$.push("scale-includes-pitch-" + pitch_class(n + tonic));
+          results$.push("scale-includes-pitch-class-" + pitch_to_pitch_class(n + scale_tonic));
         }
         return results$;
       }()));
-      if ($scope.hover.scale_tonic_pitch != null) {
-        classes.push("hover-scale-note-degree-" + pitch_class(tonic - $scope.scale_tonic_pitch));
-      }
-      if ($scope.hover.scale_tonic_pitch != null) {
-        classes.push("hover-scale-note-pitch-" + tonic);
+      if (hover.pitch != null) {
+        classes.push("hover-note-relative-pitch-class-" + pitch_to_pitch_class(hover.pitch - scale_tonic));
+        classes.push("hover-note-pitch-class-" + pitch_to_pitch_class(hover.pitch));
       }
       return classes;
     };
@@ -720,12 +743,12 @@
         });
         fingerboard.dispatcher.on('mouseover', function(pitch){
           return $scope.$apply(function(){
-            return $scope.hover.scale_tonic_pitch = pitch;
+            return $scope.hover.pitch = pitch;
           });
         });
         return fingerboard.dispatcher.on('mouseout', function(){
           return $scope.$apply(function(){
-            return $scope.hover.scale_tonic_pitch = null;
+            return $scope.hover.pitch = null;
           });
         });
       }
@@ -736,6 +759,7 @@
       restrict: 'CE',
       replace: true,
       scope: {
+        pitch_classes: '=',
         pitches: '=',
         hover: '='
       },
@@ -765,11 +789,13 @@
         });
         keyboard.dispatcher.on('mouseover', function(pitch){
           return $scope.$apply(function(){
+            $scope.hover.pitch = pitch;
             return $scope.hover.scale_tonic_pitch = pitch;
           });
         });
         return keyboard.dispatcher.on('mouseout', function(){
           return $scope.$apply(function(){
+            $scope.hover.pitch = null;
             return $scope.hover.scale_tonic_pitch = null;
           });
         });
