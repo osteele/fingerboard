@@ -22,6 +22,10 @@ module.exports = (grunt) ->
       app: ['**/*.coffee']
       options:
         max_line_length: { value: 120 }
+    connect:
+      server:
+        options:
+          base: 'build'
     copy:
       debug:
         expand: true
@@ -72,6 +76,9 @@ module.exports = (grunt) ->
     watch:
       options:
         livereload: true
+      copy:
+        files: ['app/assets/**/*']
+        tasks: ['copy:debug']
       sass:
         files: ['app/**/main.scss']
         tasks: ['sass:debug']
@@ -84,6 +91,7 @@ module.exports = (grunt) ->
 
   grunt.loadNpmTasks 'grunt-coffeelint'
   grunt.loadNpmTasks 'grunt-contrib-coffee'
+  grunt.loadNpmTasks 'grunt-contrib-connect'
   grunt.loadNpmTasks 'grunt-contrib-copy'
   grunt.loadNpmTasks 'grunt-contrib-jade'
   grunt.loadNpmTasks 'grunt-contrib-sass'
@@ -95,4 +103,4 @@ module.exports = (grunt) ->
   grunt.registerTask 'build', ['livescript:debug', 'jade:debug', 'sass:debug', 'copy:debug']
   grunt.registerTask 'build:release', ['livescript:release', 'jade:release', 'sass:release', 'copy:release']
   grunt.registerTask 'deploy', ['build:release', 'githubPages:target']
-  grunt.registerTask 'default', ['watch']
+  grunt.registerTask 'default', ['build', 'connect', 'watch']
