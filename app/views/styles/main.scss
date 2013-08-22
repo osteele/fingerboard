@@ -34,6 +34,8 @@ h1 {
 
 body.loading .module { display: none; }
 
+h2.panel-title span.dropdown a.dropdown-toggle { color: rgb(51, 51, 51) }
+
 #templates { display: none; }
 
 $root-color: rgb(255, 96, 96);
@@ -299,3 +301,5 @@ svg text {
     line.chromatic { stroke: none; }
   }
 }
+
+#modes .scale h3 { min-height: 4.5ex; }
