@@ -1,5 +1,5 @@
 doctype 5
-html(lang="en", ng-app="FingerboardScales")
+html(lang="en", ng-app="FingerboardApp")
   head
     title Fingerboard Scales
     meta(http-equiv="content-type", content="text/html; charset=UTF-8")
@@ -14,18 +14,23 @@ html(lang="en", ng-app="FingerboardScales")
     link(href="./main.css", rel="stylesheet", type="text/css")
 
     script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js", defer)
-    script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.0.0-rc2/js/bootstrap.min.js", defer)
     script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/angular.js/1.1.5/angular.min.js", defer)
+    script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.5.0/ui-bootstrap-tpls.min.js", defer)
     script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/d3/3.2.2/d3.v3.min.js", defer)
 
     script(src="./fingerboard.js", defer)
 
   body.loading(ng-controller="FingerboardScalesCtrl", ng-class="bodyClassNames()")
-    h1
-      | Fingerboard Scales
+    h1 Fingerboard Scales
 
     .module.panel
-      h2.panel-title Fingerboard
+      h2.panel-title
+        span.dropdown
+          a.dropdown-toggle {{instrument.name}}
+          ul.dropdown-menu
+            li(ng-repeat="instr in instruments")
+              a(ng-click="setInstrument(instr)") {{instr.name}}
+        | Fingerboard
       #instruments.nav.nav-tabs
         li.btn.navbar-btn.btn-default(type="button") Violin
         li.btn.navbar-btn(type="button") Viola
@@ -33,7 +38,7 @@ html(lang="en", ng-app="FingerboardScales")
       fingerboard#fingerboard
       #fingerings.btn-group
         button.btn.btn-default(type="button") Notes
-        button.btn(type="button") Fingerings
+        button.btn(type="button") Fingers
         button.btn(type="button") Scale Degrees
 
     .module.panel
@@ -49,8 +54,7 @@ html(lang="en", ng-app="FingerboardScales")
           pitch-constellation(pitches="s.pitches")
 
       .clearfix
-      hr(ng-show="scale.modes || scale.parent.modes")
-      h2.panel-title Modes of the {{scale.name}} Scale
+      h2.panel-title(ng-show="scale.modes || scale.parent.modes") Modes of the {{scale.parent.base.name || scale.parent.name}} Scale
       #modes.scales
         .scale.pull-left(ng-repeat="s in (scale.modes || scale.parent.modes)", ng-class="{selected: s == scale}", ng-click="setScale(s)",
             ng-mouseover="hover.pitches = s.pitches", ng-mouseout="hover.pitches = null")
@@ -62,7 +66,7 @@ html(lang="en", ng-app="FingerboardScales")
     a#fork-me(href="https://github.com/osteele/fingerboard")
 
     #about-container
-      i#about(data-original-title="About").icon-info-sign
+      i#about(unsafe-popover="{{aboutText}}", popover-placement="bottom", popover-trigger="mouseenter").icon-info-sign
 
     #templates
       #about-text

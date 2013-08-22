@@ -60,15 +60,16 @@ do ->
   for {name, mode_names, pitches}:scale in Scales
     Scales[name] = scale
   rotate = (pitches, i) ->
+    i %%= pitches.length
     pitches = pitches.slice(i) ++ pitches[0 til i]
     pitches.map -> pitch_class(it - pitches[0])
   for {name, mode_names, mode_of, pitches}:scale in Scales
-    if mode_of?
-      base = Scales[mode_of]
-      [i] = [0 til pitches.length].filter (i) -> rotate(base.pitches, i) * ',' == pitches * ','
-      mode_names = scale.mode_names = base.mode_names.slice(i) ++ base.mode_names[0 til i]
+    scale.base = base = Scales[mode_of]
+    mode_names or= base?.mode_names
     if mode_names?
-      scale.modes = [{name: name.replace(/#/ '\u266F').replace(/\bb(\d)/ '\u266D$1'), pitches: rotate(pitches, i), parent: scale} for name, i in mode_names]
+      scale.mode_index = 0
+      [scale.mode_index] = [0 til pitches.length].filter((i) -> rotate(base.pitches, i) * ',' == pitches * ',') if base?
+      scale.modes = [{name: name.replace(/#/ '\u266F').replace(/\bb(\d)/ '\u266D$1'), pitches: rotate(base?.pitches or pitches, i), parent: scale} for name, i in mode_names]
 
 const Instruments =
   * name: 'Violin'
@@ -424,21 +425,26 @@ d3.music.note-grid = (model, style, referenceElement) ->
 # Angular
 #
 
-module = angular.module 'FingerboardScales', []
+module = angular.module 'FingerboardApp', ['ui.bootstrap']
 
 @FingerboardScalesCtrl = ($scope) ->
-  $('#about-text a').attr \target \_blank
-  $('#about').popover content: $('#about-text').html!, html: true, placement: \bottom
-  $scope.instrument = Instruments.Violin
+  $scope.aboutText = $('#about-text').html!
   $scope.scales = Scales
+  $scope.instruments = Instruments
+  $scope.instrument = Instruments.Violin
   $scope.scale = Scales.0.modes.0
   $scope.scale_tonic_name = \C
   $scope.scale_tonic_pitch = 0
-  $scope.setScale = (s) ->
-    $scope.scale = s.modes?.0 or s
   $scope.hover =
     pitches: null
     scale_tonic_pitch: null
+
+  $scope.setInstrument = (instr) ->
+    $scope.instrument = instr if instr?
+
+  $scope.setScale = (s) ->
+    $scope.scale = s.modes?[s.mode_index] or s
+
   $scope.bodyClassNames = ->
     tonic = $scope.hover.scale_tonic_pitch ? $scope.scale_tonic_pitch
     pitches = $scope.hover.pitches ? $scope.scale.pitches
@@ -463,14 +469,14 @@ module = angular.module 'FingerboardScales', []
   $('#fingerings .btn').click ->
     $('#fingerings .btn').removeClass \btn-default
     $(@).addClass \btn-default
-    note_label_name = $(@).text!.replace(' ', '_').toLowerCase!
+    note_label_name = $(@).text!.replace(' ', '_').toLowerCase!.replace(\fingers, \fingerings)
     $scope.$apply ->
       $scope.note_label = note_label_name
 
   $(document).bind \touchmove false
   $('body').removeClass \loading
 
-module.directive 'fingerboard', ->
+module.directive \fingerboard, ->
   restrict: 'CE'
   link: ($scope, element, attrs) ->
     fingerboard = d3.music.fingerboard $scope, Style.fingerboard
@@ -483,7 +489,7 @@ module.directive 'fingerboard', ->
     fingerboard.dispatcher.on \mouseout, ->
       $scope.$apply -> $scope.hover.scale_tonic_pitch = null
 
-module.directive 'pitchConstellation', ->
+module.directive \pitchConstellation, ->
   restrict: 'CE'
   replace: true
   scope: {pitches: '=', hover: '='}
@@ -492,7 +498,7 @@ module.directive 'pitchConstellation', ->
     constellation = d3.music.pitch-constellation $scope.pitches, Style.scales
     d3.select(element.context).call constellation
 
-module.directive 'keyboard', ->
+module.directive \keyboard, ->
   restrict: 'CE'
   link: ($scope, element, attrs) ->
     keyboard = d3.music.keyboard $scope, Style.keyboard
@@ -507,3 +513,11 @@ module.directive 'keyboard', ->
       $scope.$apply -> $scope.hover.scale_tonic_pitch = pitch
     keyboard.dispatcher.on \mouseout, ->
       $scope.$apply -> $scope.hover.scale_tonic_pitch = null
+
+module.directive \unsafePopoverPopup, ->
+  restrict: 'EA'
+  replace: true
+  scope: {title: '@', content: '@', placement: '@', animation: '&', isOpen: '&'}
+  templateUrl: 'template/popover.html'
+.directive \unsafePopover, ($tooltip) ->
+  $tooltip \unsafePopover \popover \click
