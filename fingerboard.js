@@ -634,27 +634,28 @@
     };
     return my;
   };
-  module = angular.module('FingerboardScales', []);
+  module = angular.module('FingerboardApp', ['ui.bootstrap']);
   this.FingerboardScalesCtrl = function($scope){
     var noteGrid;
-    $('#about-text a').attr('target', '_blank');
-    $('#about').popover({
-      content: $('#about-text').html(),
-      html: true,
-      placement: 'bottom'
-    });
-    $scope.instrument = Instruments.Violin;
+    $scope.aboutText = $('#about-text').html();
     $scope.scales = Scales;
+    $scope.instruments = Instruments;
+    $scope.instrument = Instruments.Violin;
     $scope.scale = Scales[0].modes[0];
     $scope.scale_tonic_name = 'C';
     $scope.scale_tonic_pitch = 0;
-    $scope.setScale = function(s){
-      var ref$;
-      return $scope.scale = ((ref$ = s.modes) != null ? ref$[s.mode_index] : void 8) || s;
-    };
     $scope.hover = {
       pitches: null,
       scale_tonic_pitch: null
+    };
+    $scope.setInstrument = function(instr){
+      if (instr != null) {
+        return $scope.instrument = instr;
+      }
+    };
+    $scope.setScale = function(s){
+      var ref$;
+      return $scope.scale = ((ref$ = s.modes) != null ? ref$[s.mode_index] : void 8) || s;
     };
     $scope.bodyClassNames = function(){
       var tonic, ref$, pitches, classes, n;
@@ -694,20 +695,11 @@
     $scope.$watch(function(){
       return noteGrid.update();
     });
-    $('#instruments .btn').click(function(){
-      var instrument_name;
-      $('#instruments .btn').removeClass('btn-default');
-      $(this).addClass('btn-default');
-      instrument_name = $(this).text();
-      return $scope.$apply(function(){
-        return $scope.instrument = Instruments[instrument_name];
-      });
-    });
     $('#fingerings .btn').click(function(){
       var note_label_name;
       $('#fingerings .btn').removeClass('btn-default');
       $(this).addClass('btn-default');
-      note_label_name = $(this).text().replace(' ', '_').toLowerCase();
+      note_label_name = $(this).text().replace(' ', '_').toLowerCase().replace('fingers', 'fingerings');
       return $scope.$apply(function(){
         return $scope.note_label = note_label_name;
       });
@@ -783,6 +775,22 @@
         });
       }
     };
+  });
+  module.directive('unsafePopoverPopup', function(){
+    return {
+      restrict: 'EA',
+      replace: true,
+      scope: {
+        title: '@',
+        content: '@',
+        placement: '@',
+        animation: '&',
+        isOpen: '&'
+      },
+      templateUrl: 'template/popover.html'
+    };
+  }).directive('unsafePopover', function($tooltip){
+    return $tooltip('unsafePopover', 'popover', 'click');
   });
   function in$(x, arr){
     var i = -1, l = arr.length >>> 0;

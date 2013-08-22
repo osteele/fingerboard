@@ -1,5 +1,5 @@
 (function(){
-  angular.module('myModule', ['ui.directives', 'ui.bootstrap']);
+  angular.module('DemoApp', ['ui.bootstrap']);
   this.MainCtrl = function($scope, $http, orderByFilter){
     var url, $iframe;
     console.info('main');
@@ -31,9 +31,13 @@
     };
   };
   this.PopoverDemoCtrl = function($scope){
-    console.info('demo');
+    console.info('popover');
     $scope.dynamicPopover = "Hello, World!";
     $scope.dynamicPopoverText = "dynamic";
     return $scope.dynamicPopoverTitle = "Title";
+  };
+  this.DropdownCtrl = function($scope){
+    console.info('dropdown');
+    return $scope.items = ["The first choice!", "And another choice for you.", "but wait! A third!"];
   };
 }).call(this);
