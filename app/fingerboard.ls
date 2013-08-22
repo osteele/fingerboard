@@ -172,15 +172,22 @@ d3.music.keyboard = (model, attributes) ->
         height: ({attrs}) -> attrs.height
 
     key_views.append \text
+      .classed \flat-label, true
       .attr do
         x: ({{x, width}:attrs}) -> x + width / 2
         y: ({{y, height}:attrs}) -> y + height - 6
-      .text ({name}) -> name
+      .text -> FlatNoteNames[it.pitch_class]
+
+    key_views.append \text
+      .classed \sharp-label, true
+      .attr do
+        x: ({{x, width}:attrs}) -> x + width / 2
+        y: ({{y, height}:attrs}) -> y + height - 6
+      .text -> SharpNoteNames[it.pitch_class]
 
     update = ->
-      # console.info model.scale.pitch_classes
       key_views
-        .classed \root, -> it.pitch_class == model.scale_tonic_pitch
+        .classed \root, -> pitch_to_pitch_class(it.pitch - model.scale_tonic_pitch) == 0
         .classed \scale-note, -> pitch_to_pitch_class(it.pitch - model.scale_tonic_pitch) in model.scale.pitch_classes
         .classed \fifth, -> pitch_to_pitch_class(it.pitch - model.scale_tonic_pitch) == 7
 
@@ -296,6 +303,8 @@ d3.music.fingerboard = (model, attributes) ->
     note_labels = d3_notes.append \text .classed \note true .attr y: 7
     note_labels.append \tspan .classed \base true
     note_labels.append \tspan .classed \accidental true
+    note_labels.append \tspan .classed \accidental true .classed \flat true .classed \flat-label true
+    note_labels.append \tspan .classed \accidental true .classed \sharp true .classed \sharp-label true
     d3_notes.append \text
       .classed \fingering true
       .attr y: 7
@@ -352,16 +361,20 @@ d3.music.fingerboard = (model, attributes) ->
 
     scale_tonic_name = model.scale_tonic_name
     pitch_name_options = if scale_tonic_name == /\u266D/ then {+flat} else {+sharp}
-    select_pitch_name_component = (component, {pitch}) -->
+    select_pitch_name_component = (component, {pitch, pitch_class}) -->
       name = pitch_name pitch, pitch_name_options
       switch component
       | \base => name - /[^\w]/
       | \accidental => name - /[\w]/
+      | \flat => FlatNoteNames[pitch_class].slice(1)
+      | \sharp => SharpNoteNames[pitch_class].slice(1)
 
     d3_notes.each ({string_number, fret_number, pitch}:note) ->
       note_labels = d3.select this .select \.note
       note_labels.select \.base .text select_pitch_name_component \base
-      note_labels.select \.accidental .text select_pitch_name_component \accidental
+      note_labels.select \.flat .text select_pitch_name_component \flat
+      note_labels.select \.sharp .text select_pitch_name_component \sharp
+      # note_labels.select \.accidental .text select_pitch_name_component \accidental
 
   return my
 
@@ -425,7 +438,7 @@ d3.music.note-grid = (model, style, referenceElement) ->
     bass_pitch = model.instrument.string_pitches.0
     pos = referenceElement.offset!
     pos.left -= style.string_width * pitch_to_pitch_class((scale_tonic - bass_pitch) * 5)
-    # FIXME why the fudge factors?
+    # FIXME why the fudge factor?
     # FIXME why doesn't work?: @selection.attr
     selection.each -> $(this).css left: pos.left + 1, top: pos.top + 1
 
@@ -461,6 +474,8 @@ module = angular.module 'FingerboardApp', ['ui.bootstrap']
     scale_tonic = hover.scale_tonic_pitch ? $scope.scale_tonic_pitch
     scale_pitch_classes = hover.scale?.pitch_classes ? $scope.scale.pitch_classes
     classes = []
+    show_sharps = (FlatNoteNames[pitch_to_pitch_class(scale_tonic)].length == 1) xor FlatNoteNames[pitch_to_pitch_class(scale_tonic)] == /F/
+    classes.push (if show_sharps then \hide-flat-labels else \hide-sharp-labels)
     classes ++= ["scale-includes-relative-pitch-class-#{n}" for n in scale_pitch_classes]
     classes ++= ["scale-includes-pitch-class-#{pitch_to_pitch_class(n + scale_tonic)}" for n in scale_pitch_classes]
     if hover.pitch?

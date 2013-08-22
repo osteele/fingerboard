@@ -237,6 +237,14 @@ svg text {
   }
 }
 
+body.hide-sharp-labels {
+  .sharp-label { display: none; }
+}
+
+body.hide-flat-labels {
+  .flat-label { display: none; }
+}
+
 @for $i from 0 through 11 {
   body.scale-includes-pitch-class-#{$i} {
     #keyboard .pitch-class-#{$i}.white-key rect {
