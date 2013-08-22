@@ -25,16 +25,12 @@ html(lang="en", ng-app="FingerboardApp")
 
     .module.panel
       h2.panel-title
-        span.dropdown
-          a.dropdown-toggle {{instrument.name}}
+        span.dropdown#instrument-selector
+          span.dropdown-toggle {{instrument.name}}
           ul.dropdown-menu
             li(ng-repeat="instr in instruments")
               a(ng-click="setInstrument(instr)") {{instr.name}}
         | Fingerboard
-      #instruments.nav.nav-tabs
-        li.btn.navbar-btn.btn-default(type="button") Violin
-        li.btn.navbar-btn(type="button") Viola
-        li.btn.navbar-btn(type="button") Cello
       fingerboard#fingerboard
       #fingerings.btn-group
         button.btn.btn-default(type="button") Notes

@@ -459,13 +459,6 @@ module = angular.module 'FingerboardApp', ['ui.bootstrap']
   d3.select(\#scale-notes).call note-grid
   $scope.$watch -> note-grid.update!
 
-  $('#instruments .btn').click ->
-    $('#instruments .btn').removeClass \btn-default
-    $(@).addClass \btn-default
-    instrument_name = $(@).text!
-    $scope.$apply ->
-      $scope.instrument = Instruments[instrument_name]
-
   $('#fingerings .btn').click ->
     $('#fingerings .btn').removeClass \btn-default
     $(@).addClass \btn-default
