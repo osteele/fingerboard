@@ -19,9 +19,10 @@ module.exports = (grunt) ->
         options:
           sourceMap: false
     coffeelint:
-      app: ['**/*.coffee']
+      app: ['**/*.coffee', '!**/node_modules/**']
       options:
-        max_line_length: { value: 120 }
+        max_line_length:
+          value: 120
     connect:
       server:
         options:
@@ -79,6 +80,9 @@ module.exports = (grunt) ->
       copy:
         files: ['app/assets/**/*']
         tasks: ['copy:debug']
+      gruntfile:
+        files: 'Gruntfile.coffee'
+        tasks: ['coffeelint']
       sass:
         files: ['app/**/main.scss']
         tasks: ['sass:debug']
@@ -86,7 +90,7 @@ module.exports = (grunt) ->
         files: ['app/**/*.jade']
         tasks: ['jade:debug']
       scripts:
-        files: ['**/*.ls']
+        files: ['**/*.ls', '!**/node_modules/**']
         tasks: ['livescript:debug']
 
   grunt.loadNpmTasks 'grunt-coffeelint'
