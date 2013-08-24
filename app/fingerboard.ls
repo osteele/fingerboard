@@ -121,7 +121,7 @@ d3.music.keyboard = (model, attributes) ->
   const style = attributes
   const octaves = attributes.octaves
   const stroke_width = 1
-  my.dispatcher = dispatcher = d3.dispatch \mouseover \mouseout \tonic \update
+  my.dispatcher = dispatcher = d3.dispatch \mouseover \mouseout \tonic_name \update
   my.update = -> dispatcher.update!
 
   function my selection
@@ -147,11 +147,11 @@ d3.music.keyboard = (model, attributes) ->
         width: white_key_count * (style.key_width + style.key_spacing) - style.key_spacing + 2 * stroke_width
         height: style.white_key_height + 1
 
-    onclick = ({pitch, name}) ->
-      model.scale_tonic_name = FlatNoteNames[pitch]
+    onclick = ({pitch, pitch_class}) ->
+      model.scale_tonic_name = FlatNoteNames[pitch_class]
       model.scale_tonic_pitch = pitch
       update!
-      dispatcher.tonic model.scale_tonic_name
+      dispatcher.tonic_name model.scale_tonic_name
 
     key_views = root.selectAll \.piano-key
       .data(keys).enter!
@@ -504,45 +504,45 @@ module = angular.module 'FingerboardApp', ['ui.bootstrap']
 
 module.directive \fingerboard, ->
   restrict: 'CE'
-  link: ($scope, element, attrs) ->
-    fingerboard = d3.music.fingerboard $scope, Style.fingerboard
+  link: (scope, element, attrs) ->
+    fingerboard = d3.music.fingerboard scope, Style.fingerboard
     d3.select(element.0).call fingerboard
-    $scope.$watch ->
-      fingerboard.attr \note_label, $scope.note_label
+    scope.$watch ->
+      fingerboard.attr \note_label, scope.note_label
       fingerboard.update!
     fingerboard.dispatcher.on \mouseover, (pitch) ->
-      $scope.$apply -> $scope.hover.pitch = pitch
+      scope.$apply -> scope.hover.pitch = pitch
     fingerboard.dispatcher.on \mouseout, ->
-      $scope.$apply -> $scope.hover.pitch = null
+      scope.$apply -> scope.hover.pitch = null
 
 module.directive \pitchConstellation, ->
   restrict: 'CE'
   replace: true
   scope: {pitch_classes: '=', pitches: '=', hover: '='}
   transclude: true
-  link: ($scope, element, attrs) ->
-    constellation = d3.music.pitch-constellation $scope.pitches, Style.scales
+  link: (scope, element, attrs) ->
+    constellation = d3.music.pitch-constellation scope.pitches, Style.scales
     d3.select(element.0).call constellation
 
 module.directive \keyboard, ->
   restrict: 'CE'
-  link: ($scope, element, attrs) ->
-    keyboard = d3.music.keyboard $scope, Style.keyboard
+  link: (scope, element, attrs) ->
+    keyboard = d3.music.keyboard scope, Style.keyboard
     d3.select(element.0).call keyboard
-    $scope.$watch ->
+    scope.$watch ->
       keyboard.update!
-    keyboard.dispatcher.on \tonic, (tonic_name) ->
-      $scope.$apply ->
-        $scope.scale_tonic_name = tonic_name
-        $scope.scale_tonic_pitch = pitch_name_to_number(tonic_name)
+    keyboard.dispatcher.on \tonic_name, (tonic_name) ->
+      scope.$apply ->
+        scope.scale_tonic_name = tonic_name
+        scope.scale_tonic_pitch = pitch_name_to_number(tonic_name)
     keyboard.dispatcher.on \mouseover, (pitch) ->
-      $scope.$apply ->
-        $scope.hover.pitch = pitch
-        $scope.hover.scale_tonic_pitch = pitch
+      scope.$apply ->
+        scope.hover.pitch = pitch
+        scope.hover.scale_tonic_pitch = pitch
     keyboard.dispatcher.on \mouseout, ->
-      $scope.$apply ->
-        $scope.hover.pitch = null
-        $scope.hover.scale_tonic_pitch = null
+      scope.$apply ->
+        scope.hover.pitch = null
+        scope.hover.scale_tonic_pitch = null
 
 module.directive \unsafePopoverPopup, ->
   restrict: 'EA'
