@@ -175,16 +175,18 @@
   };
   d3.music || (d3.music = {});
   d3.music.keyboard = function(model, attributes){
-    var style, octaves, stroke_width, dispatcher;
+    var style, octaves, stroke_width, selection, dispatcher, update;
     style = attributes;
     octaves = attributes.octaves;
     stroke_width = 1;
-    my.dispatcher = dispatcher = d3.dispatch('mouseover', 'mouseout', 'tonic', 'update');
+    selection = null;
+    my.dispatcher = dispatcher = d3.dispatch('mouseover', 'mouseout', 'tonic_name');
     my.update = function(){
-      return dispatcher.update();
+      return update;
     };
-    function my(selection){
-      var keys, x, i$, len$, ref$, attrs, width, is_black_key, white_key_count, root, onclick, key_views, update;
+    function my(_selection){
+      var keys, x, i$, len$, ref$, attrs, width, is_black_key, white_key_count, root, onclick, key_views;
+      selection = _selection;
       keys = (function(){
         var i$, to$, results$ = [];
         for (i$ = 0, to$ = 12 * octaves; i$ < to$; ++i$) {
@@ -238,7 +240,7 @@
         model.scale_tonic_name = FlatNoteNames[pitch_class];
         model.scale_tonic_pitch = pitch;
         update();
-        return dispatcher.tonic(model.scale_tonic_name);
+        return dispatcher.tonic_name(model.scale_tonic_name);
       };
       key_views = root.selectAll('.piano-key').data(keys).enter().append('g').attr('class', function(it){
         return "pitch-" + it.pitch + " pitch-class-" + it.pitch_class;
@@ -301,20 +303,17 @@
       }).text(function(it){
         return SharpNoteNames[it.pitch_class];
       });
-      update = function(){
-        return key_views.classed('root', function(it){
-          return pitch_to_pitch_class(it.pitch - model.scale_tonic_pitch) === 0;
-        }).classed('scale-note', function(it){
-          return in$(pitch_to_pitch_class(it.pitch - model.scale_tonic_pitch), model.scale.pitch_classes);
-        }).classed('fifth', function(it){
-          return pitch_to_pitch_class(it.pitch - model.scale_tonic_pitch) === 7;
-        });
-      };
-      dispatcher.on('update', function(){
-        return update();
-      });
       return update();
     }
+    update = function(){
+      return selection.selectAll('.piano-key').classed('root', function(it){
+        return pitch_to_pitch_class(it.pitch - model.scale_tonic_pitch) === 0;
+      }).classed('scale-note', function(it){
+        return in$(pitch_to_pitch_class(it.pitch - model.scale_tonic_pitch), model.scale.pitch_classes);
+      }).classed('fifth', function(it){
+        return pitch_to_pitch_class(it.pitch - model.scale_tonic_pitch) === 7;
+      });
+    };
     return my;
   };
   d3.music.pitchConstellation = function(pitch_classes, attributes){
@@ -367,16 +366,17 @@
     };
   };
   d3.music.fingerboard = function(model, attributes){
-    var style, label_sets, dispatcher, instrument, d3_notes, note_label, update_instrument;
+    var style, label_sets, dispatcher, attrs, d3_notes, note_label, update_instrument;
     style = attributes;
     label_sets = ['notes', 'fingerings', 'scale-degrees'];
     dispatcher = my.dispatcher = d3.dispatch('mouseover', 'mouseout', 'update');
-    instrument = model.instrument;
+    attrs = {};
     d3_notes = null;
     note_label = null;
     function my(selection){
-      var string_count, finger_positions, i$, string_number, j$, to$, fret_number, pitch, root, note_labels;
-      string_count = model.instrument.string_pitches.length;
+      var instrument, string_count, finger_positions, i$, string_number, j$, to$, fret_number, pitch, root, text_y, note_labels;
+      instrument = model.instrument;
+      string_count = instrument.string_pitches.length;
       finger_positions = [];
       for (i$ = 0; i$ < string_count; ++i$) {
         string_number = i$;
@@ -434,19 +434,20 @@
       d3_notes.append('circle').attr({
         r: style.note_radius
       });
+      text_y = 7;
       note_labels = d3_notes.append('text').classed('note', true).attr({
-        y: 7
+        y: text_y
       });
       note_labels.append('tspan').classed('base', true);
       note_labels.append('tspan').classed('accidental', true).classed('flat', true).classed('flat-label', true);
       note_labels.append('tspan').classed('accidental', true).classed('sharp', true).classed('sharp-label', true);
       d3_notes.append('text').classed('fingering', true).attr({
-        y: 7
+        y: text_y
       }).text(function(it){
         return it.fingering_name;
       });
       d3_notes.append('text').classed('scale-degree', true).attr({
-        y: 7
+        y: text_y
       });
       dispatcher.on('update', function(){
         return my.update();
@@ -464,11 +465,14 @@
       return my.update();
     };
     my.update = function(){
-      var scale, scale_pitch_classes, scale_tonic, i$, ref$, len$, k, visible, labels;
+      var scale, scale_tonic, scale_pitch_classes, i$, ref$, len$, k, visible, labels;
+      if (attrs.instrument === model.instrument && attrs.scale === model.scale && attrs.tonic === model.tonic) {
+        return;
+      }
       update_instrument();
-      scale = model.scale;
+      scale = attrs.scale = model.scale;
+      scale_tonic = attrs.tonic = model.scale_tonic_pitch;
       scale_pitch_classes = scale.pitch_classes;
-      scale_tonic = model.scale_tonic_pitch;
       note_label = note_label || 'notes';
       for (i$ = 0, len$ = (ref$ = label_sets).length; i$ < len$; ++i$) {
         k = ref$[i$];
@@ -498,10 +502,10 @@
     };
     update_instrument = function(){
       var instrument, string_pitches, scale_tonic_name, pitch_name_options, select_pitch_name_component;
-      if (instrument === model.instrument) {
+      if (attrs.instrument === model.instrument) {
         return;
       }
-      instrument = model.instrument;
+      instrument = attrs.instrument = model.instrument;
       string_pitches = instrument.string_pitches;
       d3_notes.each(function(note){
         var string_number, fret_number;
@@ -787,7 +791,7 @@
         scope.$watch(function(){
           return keyboard.update();
         });
-        keyboard.dispatcher.on('tonic', function(tonic_name){
+        keyboard.dispatcher.on('tonic_name', function(tonic_name){
           return scope.$apply(function(){
             scope.scale_tonic_name = tonic_name;
             return scope.scale_tonic_pitch = pitch_name_to_number(tonic_name);
