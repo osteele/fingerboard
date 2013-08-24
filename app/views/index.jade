@@ -13,7 +13,7 @@ html(lang="en", ng-app="FingerboardApp")
     link(href="http://fonts.googleapis.com/css?family=Abel|Open+Sans:400,600", rel="stylesheet")
     link(href="./main.css", rel="stylesheet", type="text/css")
 
-    script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js", defer)
+    script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/zepto/1.0/zepto.min.js", defer)
     script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/angular.js/1.1.5/angular.min.js", defer)
     script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.5.0/ui-bootstrap-tpls.min.js", defer)
     script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/d3/3.2.2/d3.v3.min.js", defer)
@@ -30,6 +30,7 @@ html(lang="en", ng-app="FingerboardApp")
           ul.dropdown-menu
             li(ng-repeat="instr in instruments")
               a(ng-click="setInstrument(instr)") {{instr.name}}
+        = ' '
         | Fingerboard
       fingerboard#fingerboard
       #fingerings.btn-group

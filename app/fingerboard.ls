@@ -138,7 +138,7 @@ d3.music.keyboard = (model, attributes) ->
       attrs.x -= width / 2 if is_black_key
       x += width + style.key_spacing unless is_black_key
 
-    # order the black keys on top of (following) the while keys
+    # order the black keys on top of (following) the white keys
     keys.sort (a, b) -> a.is_black_key - b.is_black_key
 
     const white_key_count = octaves * 7
@@ -302,7 +302,6 @@ d3.music.fingerboard = (model, attributes) ->
 
     note_labels = d3_notes.append \text .classed \note true .attr y: 7
     note_labels.append \tspan .classed \base true
-    note_labels.append \tspan .classed \accidental true
     note_labels.append \tspan .classed \accidental true .classed \flat true .classed \flat-label true
     note_labels.append \tspan .classed \accidental true .classed \sharp true .classed \sharp-label true
     d3_notes.append \text
@@ -374,7 +373,6 @@ d3.music.fingerboard = (model, attributes) ->
       note_labels.select \.base .text select_pitch_name_component \base
       note_labels.select \.flat .text select_pitch_name_component \flat
       note_labels.select \.sharp .text select_pitch_name_component \sharp
-      # note_labels.select \.accidental .text select_pitch_name_component \accidental
 
   return my
 
@@ -382,6 +380,7 @@ d3.music.fingerboard = (model, attributes) ->
 d3.music.note-grid = (model, style, referenceElement) ->
   const column_count = style.columns ? 12 * 5
   const row_count = style.rows ? 12
+  cached_offset = null
   selection = null
 
   function my _selection
@@ -420,27 +419,32 @@ d3.music.note-grid = (model, style, referenceElement) ->
       .attr y: 7
       .text -> ScaleDegreeNames[it.relative_pitch_class]
 
-    my.update!
+    setTimeout (-> selection.classed \animate true), 1 # don't animate to the initial position
 
-    setTimeout (-> selection.classed \animate true), 1
+  my.update = ->
+    update_note_colors!
+    update_position!
 
   function update_note_colors
     scale_pitch_classes = model.scale.pitch_classes
-
     selection.selectAll \.scale-degree
       .classed \chromatic ({relative_pitch_class}) -> relative_pitch_class not in scale_pitch_classes
       .classed \tonic ({relative_pitch_class}) -> relative_pitch_class in scale_pitch_classes and relative_pitch_class == 0
       .classed \fifth ({relative_pitch_class}) -> relative_pitch_class in scale_pitch_classes and relative_pitch_class == 7
 
-  my.update = ->
-    update_note_colors!
+  update_position = ->
     scale_tonic = model.scale_tonic_pitch
     bass_pitch = model.instrument.string_pitches.0
-    pos = referenceElement.offset!
-    pos.left -= style.string_width * pitch_to_pitch_class((scale_tonic - bass_pitch) * 5)
+    offset = style.string_width * pitch_to_pitch_class((scale_tonic - bass_pitch) * 5)
+
+    return if offset == cached_offset # profiled
+    cached_offset := offset
+    pos = $(referenceElement).offset!
+
     # FIXME why the fudge factor?
     # FIXME why doesn't work?: @selection.attr
-    selection.each -> $(this).css left: pos.left + 1, top: pos.top + 1
+    selection.each ->
+      $(@).css left: pos.left - offset + 1, top: pos.top + 1
 
   return my
 
@@ -452,6 +456,7 @@ d3.music.note-grid = (model, style, referenceElement) ->
 module = angular.module 'FingerboardApp', ['ui.bootstrap']
 
 @FingerboardScalesCtrl = ($scope) ->
+  # $scope.aboutText = document.querySelector('#about-text').outerHTML
   $scope.aboutText = $('#about-text').html!
   $scope.scales = Scales
   $scope.instruments = Instruments
@@ -483,7 +488,7 @@ module = angular.module 'FingerboardApp', ['ui.bootstrap']
       classes.push "hover-note-pitch-class-#{pitch_to_pitch_class(hover.pitch)}"
     classes
 
-  note-grid = d3.music.note-grid $scope, Style.fingerboard, $('#fingerboard')
+  note-grid = d3.music.note-grid $scope, Style.fingerboard, document.querySelector('#fingerboard')
   d3.select(\#scale-notes).call note-grid
   $scope.$watch -> note-grid.update!
 
@@ -494,14 +499,14 @@ module = angular.module 'FingerboardApp', ['ui.bootstrap']
     $scope.$apply ->
       $scope.note_label = note_label_name
 
-  $(document).bind \touchmove false
-  $('body').removeClass \loading
+  angular.element(document).bind \touchmove false
+  angular.element(document.body).removeClass \loading
 
 module.directive \fingerboard, ->
   restrict: 'CE'
   link: ($scope, element, attrs) ->
     fingerboard = d3.music.fingerboard $scope, Style.fingerboard
-    d3.select(element.context).call fingerboard
+    d3.select(element.0).call fingerboard
     $scope.$watch ->
       fingerboard.attr \note_label, $scope.note_label
       fingerboard.update!
@@ -517,13 +522,13 @@ module.directive \pitchConstellation, ->
   transclude: true
   link: ($scope, element, attrs) ->
     constellation = d3.music.pitch-constellation $scope.pitches, Style.scales
-    d3.select(element.context).call constellation
+    d3.select(element.0).call constellation
 
 module.directive \keyboard, ->
   restrict: 'CE'
   link: ($scope, element, attrs) ->
     keyboard = d3.music.keyboard $scope, Style.keyboard
-    d3.select(element.context).call keyboard
+    d3.select(element.0).call keyboard
     $scope.$watch ->
       keyboard.update!
     keyboard.dispatcher.on \tonic, (tonic_name) ->
