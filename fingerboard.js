@@ -233,9 +233,9 @@
         height: style.white_key_height + 1
       });
       onclick = function(arg$){
-        var pitch, name;
-        pitch = arg$.pitch, name = arg$.name;
-        model.scale_tonic_name = FlatNoteNames[pitch];
+        var pitch, pitch_class;
+        pitch = arg$.pitch, pitch_class = arg$.pitch_class;
+        model.scale_tonic_name = FlatNoteNames[pitch_class];
         model.scale_tonic_pitch = pitch;
         update();
         return dispatcher.tonic(model.scale_tonic_name);
