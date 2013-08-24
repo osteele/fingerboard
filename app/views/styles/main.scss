@@ -34,7 +34,8 @@ h1 {
 
 body.loading .module { display: none; }
 
-h2.panel-title span.dropdown a.dropdown-toggle { color: rgb(51, 51, 51) }
+h2.panel-title span.dropdown {cursor: pointer;}
+h2.panel-title span.dropdown a.dropdown-toggle { color: rgb(51, 51, 51); }
 
 #instrument-selector:hover {color: blue; background: lightGray; text-decoration: underline}
 #instrument-selector .dropdown-toggle::before {content: "\25B6";}

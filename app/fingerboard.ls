@@ -121,10 +121,12 @@ d3.music.keyboard = (model, attributes) ->
   const style = attributes
   const octaves = attributes.octaves
   const stroke_width = 1
-  my.dispatcher = dispatcher = d3.dispatch \mouseover \mouseout \tonic_name \update
-  my.update = -> dispatcher.update!
+  selection = null
+  my.dispatcher = dispatcher = d3.dispatch \mouseover \mouseout \tonic_name
+  my.update = -> update
 
-  function my selection
+  function my _selection
+    selection := _selection
     const keys = [0 til 12 * octaves].map (pitch) ->
       pitch_class = pitch_to_pitch_class(pitch)
       is_black_key = FlatNoteNames[pitch_class].length > 1
@@ -185,14 +187,13 @@ d3.music.keyboard = (model, attributes) ->
         y: ({{y, height}:attrs}) -> y + height - 6
       .text -> SharpNoteNames[it.pitch_class]
 
-    update = ->
-      key_views
-        .classed \root, -> pitch_to_pitch_class(it.pitch - model.scale_tonic_pitch) == 0
-        .classed \scale-note, -> pitch_to_pitch_class(it.pitch - model.scale_tonic_pitch) in model.scale.pitch_classes
-        .classed \fifth, -> pitch_to_pitch_class(it.pitch - model.scale_tonic_pitch) == 7
-
-    dispatcher.on \update -> update!
     update!
+
+  update = ->
+    selection.selectAll \.piano-key
+      .classed \root, -> pitch_to_pitch_class(it.pitch - model.scale_tonic_pitch) == 0
+      .classed \scale-note, -> pitch_to_pitch_class(it.pitch - model.scale_tonic_pitch) in model.scale.pitch_classes
+      .classed \fifth, -> pitch_to_pitch_class(it.pitch - model.scale_tonic_pitch) == 7
 
   return my
 
@@ -242,12 +243,13 @@ d3.music.fingerboard = (model, attributes) ->
   const style = attributes
   const label_sets = <[ notes fingerings scale-degrees ]>
   const dispatcher = my.dispatcher = d3.dispatch \mouseover \mouseout \update
-  instrument = model.instrument
+  attrs = {}
   d3_notes = null
   note_label = null
 
   function my selection
-    const string_count = model.instrument.string_pitches.length
+    const instrument = model.instrument
+    const string_count = instrument.string_pitches.length
     const finger_positions = []
 
     for string_number from 0 til string_count
@@ -300,17 +302,18 @@ d3.music.fingerboard = (model, attributes) ->
     d3_notes.append \circle
       .attr r: style.note_radius
 
-    note_labels = d3_notes.append \text .classed \note true .attr y: 7
+    text_y = 7
+    note_labels = d3_notes.append \text .classed \note true .attr y: text_y
     note_labels.append \tspan .classed \base true
     note_labels.append \tspan .classed \accidental true .classed \flat true .classed \flat-label true
     note_labels.append \tspan .classed \accidental true .classed \sharp true .classed \sharp-label true
     d3_notes.append \text
       .classed \fingering true
-      .attr y: 7
+      .attr y: text_y
       .text (.fingering_name)
     d3_notes.append \text
       .classed \scale-degree true
-      .attr y: 7
+      .attr y: text_y
 
     dispatcher.on \update -> my.update!
     my.update!
@@ -322,11 +325,15 @@ d3.music.fingerboard = (model, attributes) ->
     my.update!
 
   my.update = ->
+    return if attrs.instrument == model.instrument
+      and attrs.scale == model.scale
+      and attrs.tonic == model.tonic
+
     update_instrument!
 
-    const scale = model.scale
+    const scale = attrs.scale = model.scale
+    const scale_tonic = attrs.tonic = model.scale_tonic_pitch
     const scale_pitch_classes = scale.pitch_classes
-    const scale_tonic = model.scale_tonic_pitch
 
     note_label := note_label or \notes
     for k in label_sets
@@ -350,8 +357,8 @@ d3.music.fingerboard = (model, attributes) ->
       note_labels = d3.select this
 
   update_instrument = ->
-    return if instrument == model.instrument
-    instrument = model.instrument
+    return if attrs.instrument == model.instrument
+    const instrument = attrs.instrument = model.instrument
 
     string_pitches = instrument.string_pitches
     d3_notes.each ({string_number, fret_number}:note) ->
