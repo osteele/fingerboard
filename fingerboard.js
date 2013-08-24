@@ -438,7 +438,6 @@
         y: 7
       });
       note_labels.append('tspan').classed('base', true);
-      note_labels.append('tspan').classed('accidental', true);
       note_labels.append('tspan').classed('accidental', true).classed('flat', true).classed('flat-label', true);
       note_labels.append('tspan').classed('accidental', true).classed('sharp', true).classed('sharp-label', true);
       d3_notes.append('text').classed('fingering', true).attr({
@@ -549,11 +548,12 @@
     return my;
   };
   d3.music.noteGrid = function(model, style, referenceElement){
-    var column_count, ref$, row_count, selection;
+    var column_count, ref$, row_count, cached_offset, selection, update_position;
     column_count = (ref$ = style.columns) != null
       ? ref$
       : 12 * 5;
     row_count = (ref$ = style.rows) != null ? ref$ : 12;
+    cached_offset = null;
     selection = null;
     function my(_selection){
       var notes, res$, i$, ref$, len$, column, j$, ref1$, len1$, row, note, degree_groups, degree, root, note_views;
@@ -604,7 +604,6 @@
       }).text(function(it){
         return ScaleDegreeNames[it.relative_pitch_class];
       });
-      my.update();
       return setTimeout(function(){
         return selection.classed('animate', true);
       }, 1);
@@ -623,6 +622,10 @@
         return results$;
       }
     }
+    my.update = function(){
+      update_note_colors();
+      return update_position();
+    };
     function update_note_colors(){
       var scale_pitch_classes;
       scale_pitch_classes = model.scale.pitch_classes;
@@ -640,16 +643,19 @@
         return in$(relative_pitch_class, scale_pitch_classes) && relative_pitch_class === 7;
       });
     }
-    my.update = function(){
-      var scale_tonic, bass_pitch, pos;
-      update_note_colors();
+    update_position = function(){
+      var scale_tonic, bass_pitch, offset, pos;
       scale_tonic = model.scale_tonic_pitch;
       bass_pitch = model.instrument.string_pitches[0];
-      pos = referenceElement.offset();
-      pos.left -= style.string_width * pitch_to_pitch_class((scale_tonic - bass_pitch) * 5);
+      offset = style.string_width * pitch_to_pitch_class((scale_tonic - bass_pitch) * 5);
+      if (offset === cached_offset) {
+        return;
+      }
+      cached_offset = offset;
+      pos = $(referenceElement).offset();
       return selection.each(function(){
         return $(this).css({
-          left: pos.left + 1,
+          left: pos.left - offset + 1,
           top: pos.top + 1
         });
       });
@@ -713,7 +719,7 @@
       }
       return classes;
     };
-    noteGrid = d3.music.noteGrid($scope, Style.fingerboard, $('#fingerboard'));
+    noteGrid = d3.music.noteGrid($scope, Style.fingerboard, document.querySelector('#fingerboard'));
     d3.select('#scale-notes').call(noteGrid);
     $scope.$watch(function(){
       return noteGrid.update();
@@ -727,28 +733,28 @@
         return $scope.note_label = note_label_name;
       });
     });
-    $(document).bind('touchmove', false);
-    return $('body').removeClass('loading');
+    angular.element(document).bind('touchmove', false);
+    return angular.element(document.body).removeClass('loading');
   };
   module.directive('fingerboard', function(){
     return {
       restrict: 'CE',
-      link: function($scope, element, attrs){
+      link: function(scope, element, attrs){
         var fingerboard;
-        fingerboard = d3.music.fingerboard($scope, Style.fingerboard);
-        d3.select(element.context).call(fingerboard);
-        $scope.$watch(function(){
-          fingerboard.attr('note_label', $scope.note_label);
+        fingerboard = d3.music.fingerboard(scope, Style.fingerboard);
+        d3.select(element[0]).call(fingerboard);
+        scope.$watch(function(){
+          fingerboard.attr('note_label', scope.note_label);
           return fingerboard.update();
         });
         fingerboard.dispatcher.on('mouseover', function(pitch){
-          return $scope.$apply(function(){
-            return $scope.hover.pitch = pitch;
+          return scope.$apply(function(){
+            return scope.hover.pitch = pitch;
           });
         });
         return fingerboard.dispatcher.on('mouseout', function(){
-          return $scope.$apply(function(){
-            return $scope.hover.pitch = null;
+          return scope.$apply(function(){
+            return scope.hover.pitch = null;
           });
         });
       }
@@ -764,39 +770,39 @@
         hover: '='
       },
       transclude: true,
-      link: function($scope, element, attrs){
+      link: function(scope, element, attrs){
         var constellation;
-        constellation = d3.music.pitchConstellation($scope.pitches, Style.scales);
-        return d3.select(element.context).call(constellation);
+        constellation = d3.music.pitchConstellation(scope.pitches, Style.scales);
+        return d3.select(element[0]).call(constellation);
       }
     };
   });
   module.directive('keyboard', function(){
     return {
       restrict: 'CE',
-      link: function($scope, element, attrs){
+      link: function(scope, element, attrs){
         var keyboard;
-        keyboard = d3.music.keyboard($scope, Style.keyboard);
-        d3.select(element.context).call(keyboard);
-        $scope.$watch(function(){
+        keyboard = d3.music.keyboard(scope, Style.keyboard);
+        d3.select(element[0]).call(keyboard);
+        scope.$watch(function(){
           return keyboard.update();
         });
         keyboard.dispatcher.on('tonic', function(tonic_name){
-          return $scope.$apply(function(){
-            $scope.scale_tonic_name = tonic_name;
-            return $scope.scale_tonic_pitch = pitch_name_to_number(tonic_name);
+          return scope.$apply(function(){
+            scope.scale_tonic_name = tonic_name;
+            return scope.scale_tonic_pitch = pitch_name_to_number(tonic_name);
           });
         });
         keyboard.dispatcher.on('mouseover', function(pitch){
-          return $scope.$apply(function(){
-            $scope.hover.pitch = pitch;
-            return $scope.hover.scale_tonic_pitch = pitch;
+          return scope.$apply(function(){
+            scope.hover.pitch = pitch;
+            return scope.hover.scale_tonic_pitch = pitch;
           });
         });
         return keyboard.dispatcher.on('mouseout', function(){
-          return $scope.$apply(function(){
-            $scope.hover.pitch = null;
-            return $scope.hover.scale_tonic_pitch = null;
+          return scope.$apply(function(){
+            scope.hover.pitch = null;
+            return scope.hover.scale_tonic_pitch = null;
           });
         });
       }
