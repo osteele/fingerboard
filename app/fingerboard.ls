@@ -121,18 +121,29 @@ d3.music.keyboard = (model, attributes) ->
   const style = attributes
   const octaves = attributes.octaves
   const stroke_width = 1
+  const attrs =
+    scale: model.scale
+    tonic_pitch: model.tonic_pitch
+  const dispatcher = d3.dispatch \focus_pitch \blur_pitch \tap_pitch
   selection = null
-  my.dispatcher = dispatcher = d3.dispatch \mouseover \mouseout \tonic_name
-  my.update = -> update
+
+  my.on = (...args) -> dispatcher.on ...args
+
+  my.attr = (key, value) ->
+    return attrs[key] if arguments.length < 2
+    unless attrs[key] == value
+      attrs[key] = value
+      update!
+    return my
 
   function my _selection
     selection := _selection
     const keys = [0 til 12 * octaves].map (pitch) ->
       pitch_class = pitch_to_pitch_class(pitch)
       is_black_key = FlatNoteNames[pitch_class].length > 1
-      note_name = pitch_name pitch, {+flat}
+      pitch_class_name = pitch_name pitch, {+flat}
       height = (if is_black_key then style.black_key_height else style.white_key_height)
-      return {pitch, pitch_class, name: note_name, is_black_key, attrs: {width: style.key_width, height, y: 0}}
+      return {pitch, pitch_class, pitch_class_name, is_black_key, attrs: {width: style.key_width, height, y: 0}}
 
     x = stroke_width
     for {{width}:attrs, is_black_key} in keys
@@ -149,12 +160,6 @@ d3.music.keyboard = (model, attributes) ->
         width: white_key_count * (style.key_width + style.key_spacing) - style.key_spacing + 2 * stroke_width
         height: style.white_key_height + 1
 
-    onclick = ({pitch, pitch_class}) ->
-      model.scale_tonic_name = FlatNoteNames[pitch_class]
-      model.scale_tonic_pitch = pitch
-      update!
-      dispatcher.tonic_name model.scale_tonic_name
-
     key_views = root.selectAll \.piano-key
       .data(keys).enter!
         .append \g
@@ -162,9 +167,9 @@ d3.music.keyboard = (model, attributes) ->
           .classed \piano-key true
           .classed \black-key (.is_black_key)
           .classed \white-key, -> (not it.is_black_key)
-          .on \click, onclick
-          .on \mouseover, -> dispatcher.mouseover it.pitch
-          .on \mouseout, -> dispatcher.mouseout it.pitch
+          .on \click, -> dispatcher.tap_pitch it.pitch
+          .on \mouseover, -> dispatcher.focus_pitch it.pitch
+          .on \mouseout, -> dispatcher.blur_pitch it.pitch
 
     key_views.append \rect
       .attr do
@@ -186,6 +191,8 @@ d3.music.keyboard = (model, attributes) ->
         x: ({{x, width}:attrs}) -> x + width / 2
         y: ({{y, height}:attrs}) -> y + height - 6
       .text -> SharpNoteNames[it.pitch_class]
+
+    key_views.append \title .text (-> "Click to set the scale tonic to #{it.pitch_class_name}.")
 
     update!
 
@@ -242,13 +249,19 @@ d3.music.pitch-constellation = (pitch_classes, attributes) ->
 d3.music.fingerboard = (model, attributes) ->
   const style = attributes
   const label_sets = <[ notes fingerings scale-degrees ]>
-  const dispatcher = my.dispatcher = d3.dispatch \mouseover \mouseout \update
-  attrs = {}
+  const dispatcher = d3.dispatch \focus_pitch \blur_pitch \tap_pitch
+  const attrs =
+    instrument: model.instrument
+    note_label: null
+    scale: model.scale
+    tonic_pitch: model.scale_tonic_pitch
+  const cached = {}
   d3_notes = null
-  note_label = null
+
+  my.on = (...args) -> dispatcher.on ...args
 
   function my selection
-    const instrument = model.instrument
+    const instrument = attrs.instrument
     const string_count = instrument.string_pitches.length
     const finger_positions = []
 
@@ -293,16 +306,18 @@ d3.music.fingerboard = (model, attributes) ->
         .append \g
           .classed \finger-position true
           .attr transform: ({string_number, fret_number}) ->
-            dx = (string_number + 0.5) * style.string_width
-            dy = fret_number * style.fret_height + style.note_radius + 1
+            const dx = (string_number + 0.5) * style.string_width
+            const dy = fret_number * style.fret_height + style.note_radius + 1
             "translate(#{dx}, #{dy})"
-          .on \mouseover, -> dispatcher.mouseover it.pitch
-          .on \mouseout, -> dispatcher.mouseout it.pitch
+          .on \click, -> dispatcher.tap_pitch it.pitch
+          .on \mouseover, -> dispatcher.focus_pitch it.pitch
+          .on \mouseout, -> dispatcher.blur_pitch it.pitch
 
     d3_notes.append \circle
       .attr r: style.note_radius
+    d3_notes.append \title
 
-    text_y = 7
+    const text_y = 7
     note_labels = d3_notes.append \text .classed \note true .attr y: text_y
     note_labels.append \tspan .classed \base true
     note_labels.append \tspan .classed \accidental true .classed \flat true .classed \flat-label true
@@ -315,40 +330,41 @@ d3.music.fingerboard = (model, attributes) ->
       .classed \scale-degree true
       .attr y: text_y
 
-    dispatcher.on \update -> my.update!
-    my.update!
+    update!
 
   my.attr = (key, value) ->
-    throw "Unknown key #{key}" unless key = 'note_label'
-    return note_label unless arguments.length > 1
-    note_label := value
-    my.update!
+    throw "Unknown key #{key}" unless key of attrs
+    return attrs[key] unless arguments.length > 1
+    unless attrs[key] == value
+      attrs[key] = value
+      update!
+    return my
 
-  my.update = ->
-    return if attrs.instrument == model.instrument
-      and attrs.scale == model.scale
-      and attrs.tonic == model.tonic
+  update = ->
+    return if cached.instrument == attrs.instrument
+      and cached.scale == attrs.scale
+      and cached.tonic == attrs.tonic
 
     update_instrument!
 
-    const scale = attrs.scale = model.scale
-    const scale_tonic = attrs.tonic = model.scale_tonic_pitch
-    const scale_pitch_classes = scale.pitch_classes
+    const scale = cached.scale = attrs.scale
+    const tonic_pitch = cached.tonic = attrs.tonic_pitch
+    const scale_relative_pitch_classes = scale.pitch_classes
 
-    note_label := note_label or \notes
+    attrs.note_label or= label_sets.0
     for k in label_sets
-      visible = k == note_label.replace /_/g '-'
-      labels = d3.select \#fingerboard .selectAll '.' + k.replace /s$/ ''
+      const visible = k == attrs.note_label.replace /_/g '-'
+      const labels = d3.select \#fingerboard .selectAll '.' + k.replace /s$/ ''
       labels.attr \visibility (if visible then 'inherit' else 'hidden')
 
     d3_notes.each ({pitch}:note) ->
-      note.relative_pitch_class = pitch_to_pitch_class(pitch - scale_tonic)
+      note.relative_pitch_class = pitch_to_pitch_class(pitch - tonic_pitch)
 
     d3_notes
       .attr \class, -> "pitch-class-#{it.pitch_class} relative-pitch-class-#{it.relative_pitch_class}"
       .classed \finger-position true
-      .classed \scale, -> it.relative_pitch_class in scale_pitch_classes
-      .classed \chromatic, -> it.relative_pitch_class not in scale_pitch_classes
+      .classed \scale, -> it.relative_pitch_class in scale_relative_pitch_classes
+      .classed \chromatic, -> it.relative_pitch_class not in scale_relative_pitch_classes
       .select \.scale-degree
         .text ""
         .text -> ScaleDegreeNames[it.relative_pitch_class]
@@ -357,18 +373,18 @@ d3.music.fingerboard = (model, attributes) ->
       note_labels = d3.select this
 
   update_instrument = ->
-    return if attrs.instrument == model.instrument
-    const instrument = attrs.instrument = model.instrument
+    return if cached.instrument == attrs.instrument
+    const instrument = cached.instrument = attrs.instrument
+    const scale_tonic_name = attrs.scale_tonic_name
 
-    string_pitches = instrument.string_pitches
+    const string_pitches = instrument.string_pitches
     d3_notes.each ({string_number, fret_number}:note) ->
       note.pitch =  fingerboard_position_pitch {instrument, string_number, fret_number}
       note.pitch_class = pitch_to_pitch_class(note.pitch)
 
-    scale_tonic_name = model.scale_tonic_name
-    pitch_name_options = if scale_tonic_name == /\u266D/ then {+flat} else {+sharp}
+    const pitch_name_options = if scale_tonic_name == /\u266D/ then {+flat} else {+sharp}
     select_pitch_name_component = (component, {pitch, pitch_class}) -->
-      name = pitch_name pitch, pitch_name_options
+      const name = pitch_name pitch, pitch_name_options
       switch component
       | \base => name - /[^\w]/
       | \accidental => name - /[\w]/
@@ -381,6 +397,8 @@ d3.music.fingerboard = (model, attributes) ->
       note_labels.select \.flat .text select_pitch_name_component \flat
       note_labels.select \.sharp .text select_pitch_name_component \sharp
 
+    d3_notes.select \title .text (-> "Click to set the scale tonic to #{FlatNoteNames[it.pitch_class]}.")
+
   return my
 
 
@@ -392,7 +410,7 @@ d3.music.note-grid = (model, style, referenceElement) ->
 
   function my _selection
     selection := _selection
-    notes = [{column, row} for column in [0 til column_count] for row in [0 til row_count]]
+    const notes = [{column, row} for column in [0 til column_count] for row in [0 til row_count]]
     for note in notes then note.relative_pitch_class = pitch_to_pitch_class note.column * 7 + note.row
     degree_groups = d3.nest!
       .key (.relative_pitch_class)
@@ -440,9 +458,9 @@ d3.music.note-grid = (model, style, referenceElement) ->
       .classed \fifth ({relative_pitch_class}) -> relative_pitch_class in scale_pitch_classes and relative_pitch_class == 7
 
   update_position = ->
-    scale_tonic = model.scale_tonic_pitch
-    bass_pitch = model.instrument.string_pitches.0
-    offset = style.string_width * pitch_to_pitch_class((scale_tonic - bass_pitch) * 5)
+    const scale_tonic = model.scale_tonic_pitch
+    const bass_pitch = model.instrument.string_pitches.0
+    const offset = style.string_width * pitch_to_pitch_class((scale_tonic - bass_pitch) * 5)
 
     return if offset == cached_offset # profiled
     cached_offset := offset
@@ -482,11 +500,11 @@ module = angular.module 'FingerboardApp', ['ui.bootstrap']
     $scope.scale = s.modes?[s.mode_index] or s
 
   $scope.bodyClassNames = ->
-    hover = $scope.hover
-    scale_tonic = hover.scale_tonic_pitch ? $scope.scale_tonic_pitch
-    scale_pitch_classes = hover.scale?.pitch_classes ? $scope.scale.pitch_classes
+    const hover = $scope.hover
+    const scale_tonic = hover.scale_tonic_pitch ? $scope.scale_tonic_pitch
+    const scale_pitch_classes = hover.scale?.pitch_classes ? $scope.scale.pitch_classes
+    const show_sharps = (FlatNoteNames[pitch_to_pitch_class(scale_tonic)].length == 1) xor FlatNoteNames[pitch_to_pitch_class(scale_tonic)] == /F/
     classes = []
-    show_sharps = (FlatNoteNames[pitch_to_pitch_class(scale_tonic)].length == 1) xor FlatNoteNames[pitch_to_pitch_class(scale_tonic)] == /F/
     classes.push (if show_sharps then \hide-flat-labels else \hide-sharp-labels)
     classes ++= ["scale-includes-relative-pitch-class-#{n}" for n in scale_pitch_classes]
     classes ++= ["scale-includes-pitch-class-#{pitch_to_pitch_class(n + scale_tonic)}" for n in scale_pitch_classes]
@@ -495,7 +513,7 @@ module = angular.module 'FingerboardApp', ['ui.bootstrap']
       classes.push "hover-note-pitch-class-#{pitch_to_pitch_class(hover.pitch)}"
     classes
 
-  note-grid = d3.music.note-grid $scope, Style.fingerboard, document.querySelector('#fingerboard')
+  const note-grid = d3.music.note-grid $scope, Style.fingerboard, document.querySelector('#fingerboard')
   d3.select(\#scale-notes).call note-grid
   $scope.$watch -> note-grid.update!
 
@@ -512,14 +530,19 @@ module = angular.module 'FingerboardApp', ['ui.bootstrap']
 module.directive \fingerboard, ->
   restrict: 'CE'
   link: (scope, element, attrs) ->
-    fingerboard = d3.music.fingerboard scope, Style.fingerboard
+    const fingerboard = d3.music.fingerboard scope, Style.fingerboard
     d3.select(element.0).call fingerboard
     scope.$watch ->
       fingerboard.attr \note_label, scope.note_label
-      fingerboard.update!
-    fingerboard.dispatcher.on \mouseover, (pitch) ->
+      fingerboard.attr \scale, scope.scale
+      fingerboard.attr \tonic_pitch, scope.scale_tonic_pitch
+    fingerboard.on \tap_pitch, (pitch) ->
+      scope.$apply ->
+        scope.scale_tonic_name = pitch_name(pitch)
+        scope.scale_tonic_pitch = pitch
+    fingerboard.on \focus_pitch, (pitch) ->
       scope.$apply -> scope.hover.pitch = pitch
-    fingerboard.dispatcher.on \mouseout, ->
+    fingerboard.on \blur_pitch, ->
       scope.$apply -> scope.hover.pitch = null
 
 module.directive \pitchConstellation, ->
@@ -528,25 +551,26 @@ module.directive \pitchConstellation, ->
   scope: {pitch_classes: '=', pitches: '=', hover: '='}
   transclude: true
   link: (scope, element, attrs) ->
-    constellation = d3.music.pitch-constellation scope.pitches, Style.scales
+    const constellation = d3.music.pitch-constellation scope.pitches, Style.scales
     d3.select(element.0).call constellation
 
 module.directive \keyboard, ->
   restrict: 'CE'
   link: (scope, element, attrs) ->
-    keyboard = d3.music.keyboard scope, Style.keyboard
+    const keyboard = d3.music.keyboard scope, Style.keyboard
     d3.select(element.0).call keyboard
     scope.$watch ->
-      keyboard.update!
-    keyboard.dispatcher.on \tonic_name, (tonic_name) ->
+      keyboard.attr \tonic_pitch, scope.scale_tonic_pitch
+      keyboard.attr \scale, scope.scale
+    keyboard.on \tap_pitch, (pitch) ->
       scope.$apply ->
-        scope.scale_tonic_name = tonic_name
-        scope.scale_tonic_pitch = pitch_name_to_number(tonic_name)
-    keyboard.dispatcher.on \mouseover, (pitch) ->
+        scope.scale_tonic_name = pitch_name(pitch)
+        scope.scale_tonic_pitch = pitch
+    keyboard.on \focus_pitch, (pitch) ->
       scope.$apply ->
         scope.hover.pitch = pitch
         scope.hover.scale_tonic_pitch = pitch
-    keyboard.dispatcher.on \mouseout, ->
+    keyboard.on \blur_pitch, ->
       scope.$apply ->
         scope.hover.pitch = null
         scope.hover.scale_tonic_pitch = null
