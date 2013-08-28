@@ -709,6 +709,31 @@
       pitch_classes: null,
       scale_tonic_pitch: null
     };
+    $scope.handleKey = function(event){
+      var char, ref$;
+      char = String.fromCharCode(event.charCode).toUpperCase();
+      switch (char) {
+      case 'A':
+      case 'B':
+      case 'C':
+      case 'D':
+      case 'E':
+      case 'F':
+      case 'G':
+        $scope.scale_tonic_name = char;
+        return $scope.scale_tonic_pitch = pitch_name_to_number(char);
+      case '#':
+      case '+':
+        $scope.scale_tonic_pitch += 1;
+        $scope.scale_tonic_pitch = (($scope.scale_tonic_pitch) % (ref$ = 12) + ref$) % ref$;
+        return $scope.scale_tonic_name = pitch_name($scope.scale_tonic_pitch);
+      case 'b':
+      case '-':
+        $scope.scale_tonic_pitch -= 1;
+        $scope.scale_tonic_pitch = (($scope.scale_tonic_pitch) % (ref$ = 12) + ref$) % ref$;
+        return $scope.scale_tonic_name = pitch_name($scope.scale_tonic_pitch);
+      }
+    };
     $scope.setInstrument = function(instr){
       if (instr != null) {
         return $scope.instrument = instr;
