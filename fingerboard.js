@@ -175,17 +175,33 @@
   };
   d3.music || (d3.music = {});
   d3.music.keyboard = function(model, attributes){
-    var style, octaves, stroke_width, selection, dispatcher, update;
+    var style, octaves, stroke_width, attrs, dispatcher, selection, update;
     style = attributes;
     octaves = attributes.octaves;
     stroke_width = 1;
+    attrs = {
+      scale: model.scale,
+      tonic_pitch: model.tonic_pitch
+    };
+    dispatcher = d3.dispatch('focus_pitch', 'blur_pitch', 'tap_pitch');
     selection = null;
-    my.dispatcher = dispatcher = d3.dispatch('mouseover', 'mouseout', 'tonic_name');
-    my.update = function(){
-      return update;
+    my.on = function(){
+      var args;
+      args = slice$.call(arguments);
+      return dispatcher.on.apply(dispatcher, args);
+    };
+    my.attr = function(key, value){
+      if (arguments.length < 2) {
+        return attrs[key];
+      }
+      if (attrs[key] !== value) {
+        attrs[key] = value;
+        update();
+      }
+      return my;
     };
     function my(_selection){
-      var keys, x, i$, len$, ref$, attrs, width, is_black_key, white_key_count, root, onclick, key_views;
+      var keys, x, i$, len$, ref$, attrs, width, is_black_key, white_key_count, root, key_views;
       selection = _selection;
       keys = (function(){
         var i$, to$, results$ = [];
@@ -194,10 +210,10 @@
         }
         return results$;
       }()).map(function(pitch){
-        var pitch_class, is_black_key, note_name, height;
+        var pitch_class, is_black_key, pitch_class_name, height;
         pitch_class = pitch_to_pitch_class(pitch);
         is_black_key = FlatNoteNames[pitch_class].length > 1;
-        note_name = pitch_name(pitch, {
+        pitch_class_name = pitch_name(pitch, {
           flat: true
         });
         height = is_black_key
@@ -206,7 +222,7 @@
         return {
           pitch: pitch,
           pitch_class: pitch_class,
-          name: note_name,
+          pitch_class_name: pitch_class_name,
           is_black_key: is_black_key,
           attrs: {
             width: style.key_width,
@@ -234,24 +250,18 @@
         width: white_key_count * (style.key_width + style.key_spacing) - style.key_spacing + 2 * stroke_width,
         height: style.white_key_height + 1
       });
-      onclick = function(arg$){
-        var pitch, pitch_class;
-        pitch = arg$.pitch, pitch_class = arg$.pitch_class;
-        model.scale_tonic_name = FlatNoteNames[pitch_class];
-        model.scale_tonic_pitch = pitch;
-        update();
-        return dispatcher.tonic_name(model.scale_tonic_name);
-      };
       key_views = root.selectAll('.piano-key').data(keys).enter().append('g').attr('class', function(it){
         return "pitch-" + it.pitch + " pitch-class-" + it.pitch_class;
       }).classed('piano-key', true).classed('black-key', function(it){
         return it.is_black_key;
       }).classed('white-key', function(it){
         return !it.is_black_key;
-      }).on('click', onclick).on('mouseover', function(it){
-        return dispatcher.mouseover(it.pitch);
+      }).on('click', function(it){
+        return dispatcher.tap_pitch(it.pitch);
+      }).on('mouseover', function(it){
+        return dispatcher.focus_pitch(it.pitch);
       }).on('mouseout', function(it){
-        return dispatcher.mouseout(it.pitch);
+        return dispatcher.blur_pitch(it.pitch);
       });
       key_views.append('rect').attr({
         x: function(arg$){
@@ -302,6 +312,9 @@
         }
       }).text(function(it){
         return SharpNoteNames[it.pitch_class];
+      });
+      key_views.append('title').text(function(it){
+        return "Click to set the scale tonic to " + it.pitch_class_name + ".";
       });
       return update();
     }
@@ -366,16 +379,26 @@
     };
   };
   d3.music.fingerboard = function(model, attributes){
-    var style, label_sets, dispatcher, attrs, d3_notes, note_label, update_instrument;
+    var style, label_sets, dispatcher, attrs, cached, d3_notes, update, update_instrument;
     style = attributes;
     label_sets = ['notes', 'fingerings', 'scale-degrees'];
-    dispatcher = my.dispatcher = d3.dispatch('mouseover', 'mouseout', 'update');
-    attrs = {};
+    dispatcher = d3.dispatch('focus_pitch', 'blur_pitch', 'tap_pitch');
+    attrs = {
+      instrument: model.instrument,
+      note_label: null,
+      scale: model.scale,
+      tonic_pitch: model.scale_tonic_pitch
+    };
+    cached = {};
     d3_notes = null;
-    note_label = null;
+    my.on = function(){
+      var args;
+      args = slice$.call(arguments);
+      return dispatcher.on.apply(dispatcher, args);
+    };
     function my(selection){
       var instrument, string_count, finger_positions, i$, string_number, j$, to$, fret_number, pitch, root, text_y, note_labels;
-      instrument = model.instrument;
+      instrument = attrs.instrument;
       string_count = instrument.string_pitches.length;
       finger_positions = [];
       for (i$ = 0; i$ < string_count; ++i$) {
@@ -426,14 +449,17 @@
           dy = fret_number * style.fret_height + style.note_radius + 1;
           return "translate(" + dx + ", " + dy + ")";
         }
+      }).on('click', function(it){
+        return dispatcher.tap_pitch(it.pitch);
       }).on('mouseover', function(it){
-        return dispatcher.mouseover(it.pitch);
+        return dispatcher.focus_pitch(it.pitch);
       }).on('mouseout', function(it){
-        return dispatcher.mouseout(it.pitch);
+        return dispatcher.blur_pitch(it.pitch);
       });
       d3_notes.append('circle').attr({
         r: style.note_radius
       });
+      d3_notes.append('title');
       text_y = 7;
       note_labels = d3_notes.append('text').classed('note', true).attr({
         y: text_y
@@ -449,48 +475,48 @@
       d3_notes.append('text').classed('scale-degree', true).attr({
         y: text_y
       });
-      dispatcher.on('update', function(){
-        return my.update();
-      });
-      return my.update();
+      return update();
     }
     my.attr = function(key, value){
-      if (!(key = 'note_label')) {
+      if (!(key in attrs)) {
         throw "Unknown key " + key;
       }
       if (!(arguments.length > 1)) {
-        return note_label;
+        return attrs[key];
       }
-      note_label = value;
-      return my.update();
+      if (attrs[key] !== value) {
+        attrs[key] = value;
+        update();
+      }
+      return my;
     };
-    my.update = function(){
-      var scale, scale_tonic, scale_pitch_classes, i$, ref$, len$, k, visible, labels;
-      if (attrs.instrument === model.instrument && attrs.scale === model.scale && attrs.tonic === model.tonic) {
+    update = function(){
+      var scale, tonic_pitch, scale_relative_pitch_classes, i$, ref$, len$, k, visible, labels;
+      if (cached.instrument === attrs.instrument && cached.scale === attrs.scale && cached.tonic === attrs.tonic) {
         return;
       }
       update_instrument();
-      scale = attrs.scale = model.scale;
-      scale_tonic = attrs.tonic = model.scale_tonic_pitch;
-      scale_pitch_classes = scale.pitch_classes;
-      note_label = note_label || 'notes';
+      scale = cached.scale = attrs.scale;
+      tonic_pitch = cached.tonic = attrs.tonic_pitch;
+      scale_relative_pitch_classes = scale.pitch_classes;
+      attrs.note_label || (attrs.note_label = label_sets[0]);
       for (i$ = 0, len$ = (ref$ = label_sets).length; i$ < len$; ++i$) {
         k = ref$[i$];
-        visible = k === note_label.replace(/_/g, '-');
+        visible = k === attrs.note_label.replace(/_/g, '-');
         labels = d3.select('#fingerboard').selectAll('.' + k.replace(/s$/, ''));
         labels.attr('visibility', visible ? 'inherit' : 'hidden');
       }
       d3_notes.each(function(note){
         var pitch;
         pitch = note.pitch;
-        return note.relative_pitch_class = pitch_to_pitch_class(pitch - scale_tonic);
+        return note.relative_pitch_class = pitch_to_pitch_class(pitch - tonic_pitch);
       });
       d3_notes.attr('class', function(it){
         return "pitch-class-" + it.pitch_class + " relative-pitch-class-" + it.relative_pitch_class;
       }).classed('finger-position', true).classed('scale', function(it){
-        return in$(it.relative_pitch_class, scale_pitch_classes);
+        return in$(it.relative_pitch_class, scale_relative_pitch_classes);
       }).classed('chromatic', function(it){
-        return !in$(it.relative_pitch_class, scale_pitch_classes);
+        return !in$(it.relative_pitch_class, scale_relative_pitch_classes);
       }).select('.scale-degree').text("").text(function(it){
         return ScaleDegreeNames[it.relative_pitch_class];
       });
@@ -501,11 +527,12 @@
       });
     };
     update_instrument = function(){
-      var instrument, string_pitches, scale_tonic_name, pitch_name_options, select_pitch_name_component;
-      if (attrs.instrument === model.instrument) {
+      var instrument, scale_tonic_name, string_pitches, pitch_name_options, select_pitch_name_component;
+      if (cached.instrument === attrs.instrument) {
         return;
       }
-      instrument = attrs.instrument = model.instrument;
+      instrument = cached.instrument = attrs.instrument;
+      scale_tonic_name = attrs.scale_tonic_name;
       string_pitches = instrument.string_pitches;
       d3_notes.each(function(note){
         var string_number, fret_number;
@@ -517,7 +544,6 @@
         });
         return note.pitch_class = pitch_to_pitch_class(note.pitch);
       });
-      scale_tonic_name = model.scale_tonic_name;
       pitch_name_options = /\u266D/.exec(scale_tonic_name)
         ? {
           flat: true
@@ -540,13 +566,16 @@
           return SharpNoteNames[pitch_class].slice(1);
         }
       });
-      return d3_notes.each(function(note){
+      d3_notes.each(function(note){
         var string_number, fret_number, pitch, note_labels;
         string_number = note.string_number, fret_number = note.fret_number, pitch = note.pitch;
         note_labels = d3.select(this).select('.note');
         note_labels.select('.base').text(select_pitch_name_component('base'));
         note_labels.select('.flat').text(select_pitch_name_component('flat'));
         return note_labels.select('.sharp').text(select_pitch_name_component('sharp'));
+      });
+      return d3_notes.select('title').text(function(it){
+        return "Click to set the scale tonic to " + FlatNoteNames[it.pitch_class] + ".";
       });
     };
     return my;
@@ -690,7 +719,7 @@
       return $scope.scale = ((ref$ = s.modes) != null ? ref$[s.mode_index] : void 8) || s;
     };
     $scope.bodyClassNames = function(){
-      var hover, scale_tonic, ref$, scale_pitch_classes, ref1$, classes, show_sharps, n;
+      var hover, scale_tonic, ref$, scale_pitch_classes, ref1$, show_sharps, classes, n;
       hover = $scope.hover;
       scale_tonic = (ref$ = hover.scale_tonic_pitch) != null
         ? ref$
@@ -698,8 +727,8 @@
       scale_pitch_classes = (ref$ = (ref1$ = hover.scale) != null ? ref1$.pitch_classes : void 8) != null
         ? ref$
         : $scope.scale.pitch_classes;
-      classes = [];
       show_sharps = !(ref$ = FlatNoteNames[pitch_to_pitch_class(scale_tonic)].length === 1) !== !(ref1$ = /F/.exec(FlatNoteNames[pitch_to_pitch_class(scale_tonic)])) && (ref$ || ref1$);
+      classes = [];
       classes.push(show_sharps ? 'hide-flat-labels' : 'hide-sharp-labels');
       classes = classes.concat((function(){
         var i$, ref$, len$, results$ = [];
@@ -749,14 +778,21 @@
         d3.select(element[0]).call(fingerboard);
         scope.$watch(function(){
           fingerboard.attr('note_label', scope.note_label);
-          return fingerboard.update();
+          fingerboard.attr('scale', scope.scale);
+          return fingerboard.attr('tonic_pitch', scope.scale_tonic_pitch);
         });
-        fingerboard.dispatcher.on('mouseover', function(pitch){
+        fingerboard.on('tap_pitch', function(pitch){
+          return scope.$apply(function(){
+            scope.scale_tonic_name = pitch_name(pitch);
+            return scope.scale_tonic_pitch = pitch;
+          });
+        });
+        fingerboard.on('focus_pitch', function(pitch){
           return scope.$apply(function(){
             return scope.hover.pitch = pitch;
           });
         });
-        return fingerboard.dispatcher.on('mouseout', function(){
+        return fingerboard.on('blur_pitch', function(){
           return scope.$apply(function(){
             return scope.hover.pitch = null;
           });
@@ -789,21 +825,22 @@
         keyboard = d3.music.keyboard(scope, Style.keyboard);
         d3.select(element[0]).call(keyboard);
         scope.$watch(function(){
-          return keyboard.update();
+          keyboard.attr('tonic_pitch', scope.scale_tonic_pitch);
+          return keyboard.attr('scale', scope.scale);
         });
-        keyboard.dispatcher.on('tonic_name', function(tonic_name){
+        keyboard.on('tap_pitch', function(pitch){
           return scope.$apply(function(){
-            scope.scale_tonic_name = tonic_name;
-            return scope.scale_tonic_pitch = pitch_name_to_number(tonic_name);
+            scope.scale_tonic_name = pitch_name(pitch);
+            return scope.scale_tonic_pitch = pitch;
           });
         });
-        keyboard.dispatcher.on('mouseover', function(pitch){
+        keyboard.on('focus_pitch', function(pitch){
           return scope.$apply(function(){
             scope.hover.pitch = pitch;
             return scope.hover.scale_tonic_pitch = pitch;
           });
         });
-        return keyboard.dispatcher.on('mouseout', function(){
+        return keyboard.on('blur_pitch', function(){
           return scope.$apply(function(){
             scope.hover.pitch = null;
             return scope.hover.scale_tonic_pitch = null;
