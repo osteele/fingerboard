@@ -1,21 +1,21 @@
 module.exports = (grunt) ->
   grunt.initConfig
-    pkg: grunt.file.readJSON('package.json')
+    pkg: grunt.file.readJSON 'package.json'
     livescript:
       debug:
         expand: true
-        cwd: "app"
-        src: "*.ls"
-        dest: "build"
-        ext: ".js"
+        cwd: 'app'
+        src: '*.ls'
+        dest: 'build'
+        ext: '.js'
         options:
           sourceMap: true
       release:
         expand: true
-        cwd: "app"
-        src: "*.ls"
-        dest: "release"
-        ext: ".js"
+        cwd: 'app'
+        src: '*.ls'
+        dest: 'release'
+        ext: '.js'
         options:
           sourceMap: false
     coffeelint:

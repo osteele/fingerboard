@@ -10,7 +10,7 @@
     "music"
   ],
   "author": "Oliver Steele <steele@osteele.com> ",
-  "license": "BSD",
+  "license": "MIT",
   "devDependencies": {
     "grunt": "~0.4.1",
     "grunt-coffeelint": "0.0.7",
