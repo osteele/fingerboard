@@ -493,6 +493,23 @@ module = angular.module 'FingerboardApp', ['ui.bootstrap']
     pitch_classes: null
     scale_tonic_pitch: null
 
+  $scope.handleKey = (event) ->
+    char = String.fromCharCode(event.charCode).toUpperCase()
+    switch char
+    when 'A', 'B', 'C', 'D', 'E', 'F', 'G' then
+      $scope.scale_tonic_name = char
+      $scope.scale_tonic_pitch = pitch_name_to_number char
+    when '#', '+' then
+      $scope.scale_tonic_pitch += 1
+      $scope.scale_tonic_pitch %%= 12
+      $scope.scale_tonic_name = pitch_name $scope.scale_tonic_pitch
+    when 'b', '-' then
+      $scope.scale_tonic_pitch -= 1
+      $scope.scale_tonic_pitch %%= 12
+      $scope.scale_tonic_name = pitch_name $scope.scale_tonic_pitch
+    # when '\015' then $scope.apply ->
+    # else console.info char, event.charCode
+
   $scope.setInstrument = (instr) ->
     $scope.instrument = instr if instr?
 
@@ -564,7 +581,7 @@ module.directive \keyboard, ->
       keyboard.attr \scale, scope.scale
     keyboard.on \tap_pitch, (pitch) ->
       scope.$apply ->
-        scope.scale_tonic_name = pitch_name(pitch)
+        scope.scale_tonic_name = pitch_name pitch
         scope.scale_tonic_pitch = pitch
     keyboard.on \focus_pitch, (pitch) ->
       scope.$apply ->

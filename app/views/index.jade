@@ -20,7 +20,7 @@ html(lang="en", ng-app="FingerboardApp")
 
     script(src="./fingerboard.js", defer)
 
-  body.loading(ng-controller="FingerboardScalesCtrl", ng-class="bodyClassNames()")
+  body.loading(ng-controller="FingerboardScalesCtrl", ng-class="bodyClassNames()", ng-keypress="handleKey($event)")
     h1 Fingerboard Scales
 
     .module.panel
