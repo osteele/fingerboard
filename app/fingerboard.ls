@@ -596,6 +596,6 @@ module.directive \unsafePopoverPopup, ->
   restrict: 'EA'
   replace: true
   scope: {title: '@', content: '@', placement: '@', animation: '&', isOpen: '&'}
-  templateUrl: 'template/popover.html'
+  templateUrl: 'templates/popover.html'
 .directive \unsafePopover, ($tooltip) ->
   $tooltip \unsafePopover \popover \click

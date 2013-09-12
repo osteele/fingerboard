@@ -19,7 +19,8 @@ module.exports = (grunt) ->
         options:
           sourceMap: false
     coffeelint:
-      app: ['**/*.coffee', '!**/node_modules/**']
+      app: ['**/*.coffee', '!**/node_modules/**', '!Gruntfile.coffee']
+      gruntfile: '!Gruntfile.coffee'
       options:
         max_line_length:
           value: 120
@@ -30,15 +31,15 @@ module.exports = (grunt) ->
     copy:
       debug:
         expand: true
-        cwd: 'app/assets/'
-        dest: 'build/'
-        src: '**'
+        cwd: 'app'
+        dest: 'build'
+        src: ['**/*.html', '**/*.jpg', '**/*.png']
         filter: 'isFile'
       release:
         expand: true
-        cwd: 'app/assets/'
-        dest: 'release/'
-        src: '**'
+        cwd: 'app'
+        dest: 'release'
+        src: ['**/*.html', '**/*.jpg', '**/*.png']
         filter: 'isFile'
     githubPages:
       target:
@@ -46,8 +47,8 @@ module.exports = (grunt) ->
     jade:
       debug:
         expand: true
-        cwd: 'app/views'
-        src: '*.jade'
+        cwd: 'app'
+        src: '**/*.jade'
         dest: 'build'
         ext: '.html'
         options:
@@ -56,21 +57,32 @@ module.exports = (grunt) ->
             cdn_scheme: 'http:'
             debug: true
       release:
-        files:
-          'release/index.html': 'app/views/index.jade'
+        expand: true
+        cwd: 'app'
+        src: '**/*.jade'
+        dest: 'release'
+        ext: '.html'
         options:
           data:
             cdn_scheme: ''
             debug: false
     sass:
       debug:
-        files:
-          'build/main.css': 'app/views/styles/main.scss'
+        expand: true
+        cwd: 'app'
+        dest: 'build'
+        src: ['css/**.scss']
+        ext: '.css'
+        filter: 'isFile'
         options:
           sourcemap: true
       release:
-        files:
-          'release/main.css': 'app/views/styles/main.scss'
+        expand: true
+        cwd: 'app'
+        dest: 'release'
+        src: ['css/**.scss']
+        ext: '.css'
+        filter: 'isFile'
         options:
           sourcemap: false
           style: 'compressed'
@@ -78,11 +90,11 @@ module.exports = (grunt) ->
       options:
         livereload: true
       copy:
-        files: ['app/assets/**/*']
+        files: ['app/img/**/*', 'app/**/*.html']
         tasks: ['copy:debug']
       gruntfile:
         files: 'Gruntfile.coffee'
-        tasks: ['coffeelint']
+        tasks: ['coffeelint:gruntfile']
       sass:
         files: ['app/**/main.scss']
         tasks: ['sass:debug']
