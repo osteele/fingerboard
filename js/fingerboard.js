@@ -1,161 +1,6 @@
 (function(){
-  var SharpNoteNames, FlatNoteNames, ScaleDegreeNames, Pitches, pitch_name_to_number, pitch_number_to_name, pitch_to_pitch_class, pitch_name, Scales, Instruments, fingerboard_position_pitch, FingerPositions, Style, module, slice$ = [].slice, join$ = [].join, replace$ = ''.replace;
-  SharpNoteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'].map(function(it){
-    return it.replace(/#/, '\u266F');
-  });
-  FlatNoteNames = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'].map(function(it){
-    return it.replace(/b/, '\u266D');
-  });
-  ScaleDegreeNames = ['1', 'b2', '2', 'b3', '3', '4', 'b5', '5', 'b6', '6', 'b7', '7'].map(function(it){
-    return it.replace(/(\d)/, '$1\u0302').replace(/b/, '\u266D');
-  });
-  Pitches = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-  pitch_name_to_number = function(pitch_name){
-    var pitch;
-    pitch = FlatNoteNames.indexOf(pitch_name);
-    if (!(pitch >= 0)) {
-      pitch = SharpNoteNames.indexOf(pitch_name);
-    }
-    return pitch;
-  };
-  pitch_number_to_name = function(pitch_number){
-    var pitch;
-    pitch = pitch_to_pitch_class(pitch_number);
-    return SharpNoteNames.indexOf(pitch) || FlatNoteNames.indexOf(pitch);
-  };
-  pitch_to_pitch_class = function(pitch){
-    var ref$;
-    return ((pitch) % (ref$ = 12) + ref$) % ref$;
-  };
-  pitch_name = function(pitch, options){
-    var pitch_class, flatName, sharpName, name;
-    options == null && (options = {});
-    pitch_class = pitch_to_pitch_class(pitch);
-    flatName = FlatNoteNames[pitch_class];
-    sharpName = SharpNoteNames[pitch_class];
-    name = options.sharp ? sharpName : flatName;
-    if (options.flat && options.sharp && flatName !== sharpName) {
-      name = flatName + "/\n" + sharpName;
-    }
-    return name;
-  };
-  Scales = [
-    {
-      name: 'Diatonic Major',
-      pitch_classes: [0, 2, 4, 5, 7, 9, 11],
-      mode_names: ['Ionian', 'Dorian', 'Phrygian', 'Lydian', 'Mixolydian', 'Aeolian', 'Locrian']
-    }, {
-      name: 'Natural Minor',
-      pitch_classes: [0, 2, 3, 5, 7, 8, 10],
-      mode_of: 'Diatonic Major'
-    }, {
-      name: 'Major Pentatonic',
-      pitch_classes: [0, 2, 4, 7, 9],
-      mode_names: ['Major Pentatonic', 'Suspended Pentatonic', 'Man Gong', 'Ritusen', 'Minor Pentatonic']
-    }, {
-      name: 'Minor Pentatonic',
-      pitch_classes: [0, 3, 5, 7, 10],
-      mode_of: 'Major Pentatonic'
-    }, {
-      name: 'Melodic Minor',
-      pitch_classes: [0, 2, 3, 5, 7, 9, 11],
-      mode_names: ['Jazz Minor', 'Dorian b2', 'Lydian Augmented', 'Lydian Dominant', 'Mixolydian b6', 'Semilocrian', 'Superlocrian']
-    }, {
-      name: 'Harmonic Minor',
-      pitch_classes: [0, 2, 3, 5, 7, 8, 11],
-      mode_names: ['Harmonic Minor', 'Locrian #6', 'Ionian Augmented', 'Romanian', 'Phrygian Dominant', 'Lydian #2', 'Ultralocrian']
-    }, {
-      name: 'Blues',
-      pitch_classes: [0, 3, 5, 6, 7, 10]
-    }, {
-      name: 'Freygish',
-      pitch_classes: [0, 1, 4, 5, 7, 8, 10]
-    }, {
-      name: 'Whole Tone',
-      pitch_classes: [0, 2, 4, 6, 8, 10]
-    }, {
-      name: 'Octatonic',
-      pitch_classes: [0, 2, 3, 5, 6, 8, 9, 11]
-    }
-  ];
-  (function(){
-    var i$, ref$, len$, scale, name, mode_names, pitch_classes, rotate, mode_of, base, i, results$ = [];
-    for (i$ = 0, len$ = (ref$ = Scales).length; i$ < len$; ++i$) {
-      scale = ref$[i$], name = scale.name, mode_names = scale.mode_names, pitch_classes = scale.pitch_classes;
-      Scales[name] = scale;
-    }
-    rotate = function(pitch_classes, i){
-      var ref$;
-      i = ((i) % (ref$ = pitch_classes.length) + ref$) % ref$;
-      pitch_classes = pitch_classes.slice(i).concat(slice$.call(pitch_classes, 0, i));
-      return pitch_classes.map(function(it){
-        return pitch_to_pitch_class(it - pitch_classes[0]);
-      });
-    };
-    for (i$ = 0, len$ = (ref$ = Scales).length; i$ < len$; ++i$) {
-      scale = ref$[i$], name = scale.name, mode_names = scale.mode_names, mode_of = scale.mode_of, pitch_classes = scale.pitch_classes;
-      scale.base = base = Scales[mode_of];
-      mode_names || (mode_names = base != null ? base.mode_names : void 8);
-      if (mode_names != null) {
-        scale.mode_index = 0;
-        if (base != null) {
-          scale.mode_index = (fn$()).filter(fn1$)[0];
-        }
-        results$.push(scale.modes = (fn2$()));
-      }
-    }
-    return results$;
-    function fn$(){
-      var i$, to$, results$ = [];
-      for (i$ = 0, to$ = pitch_classes.length; i$ < to$; ++i$) {
-        results$.push(i$);
-      }
-      return results$;
-    }
-    function fn1$(i){
-      return join$.call(rotate(base.pitch_classes, i), ',') === join$.call(pitch_classes, ',');
-    }
-    function fn2$(){
-      var i$, ref$, len$, results$ = [];
-      for (i$ = 0, len$ = (ref$ = mode_names).length; i$ < len$; ++i$) {
-        i = i$;
-        name = ref$[i$];
-        results$.push({
-          name: name.replace(/#/, '\u266F').replace(/\bb(\d)/, '\u266D$1'),
-          pitch_classes: rotate((base != null ? base.pitch_classes : void 8) || pitch_classes, i),
-          parent: scale
-        });
-      }
-      return results$;
-    }
-  })();
-  Instruments = [
-    {
-      name: 'Violin',
-      string_pitches: [7, 14, 21, 28]
-    }, {
-      name: 'Viola',
-      string_pitches: [0, 7, 14, 21]
-    }, {
-      name: 'Cello',
-      string_pitches: [0, 7, 14, 21]
-    }
-  ];
-  (function(){
-    var i$, ref$, len$, instrument, results$ = [];
-    for (i$ = 0, len$ = (ref$ = Instruments).length; i$ < len$; ++i$) {
-      instrument = ref$[i$];
-      results$.push(Instruments[instrument.name] = instrument);
-    }
-    return results$;
-  })();
-  fingerboard_position_pitch = function(arg$){
-    var instrument, string_number, fret_number;
-    instrument = arg$.instrument, string_number = arg$.string_number, fret_number = arg$.fret_number;
-    return instrument.string_pitches[string_number] + fret_number;
-  };
-  FingerPositions = 7;
-  Style = {
+  angular.module('FingerboardApp', ['ui.bootstrap', 'music.directives', 'unsafe-popover', 'fingerboard.controllers']);
+  this.Style = {
     fingerboard: {
       string_width: 50,
       fret_height: 50,
@@ -173,6 +18,118 @@
       pitch_radius: 3
     }
   };
+}).call(this);
+
+(function(){
+  var controllers;
+  controllers = angular.module('fingerboard.controllers', []);
+  controllers.controller('FingerboardScalesCtrl', function($scope){
+    var k, ref$, v, noteGrid;
+    for (k in ref$ = MusicTheory) {
+      v = ref$[k];
+      window[k] = v;
+    }
+    $scope.aboutText = $('#about-text').html();
+    $scope.scales = Scales;
+    $scope.instruments = Instruments;
+    $scope.instrument = Instruments.Violin;
+    $scope.scale = Scales[0].modes[0];
+    $scope.scale_tonic_name = 'C';
+    $scope.scale_tonic_pitch = 0;
+    $scope.hover = {
+      pitch_classes: null,
+      scale_tonic_pitch: null
+    };
+    $scope.handleKey = function(event){
+      var char, ref$;
+      char = String.fromCharCode(event.charCode).toUpperCase();
+      switch (char) {
+      case 'A':
+      case 'B':
+      case 'C':
+      case 'D':
+      case 'E':
+      case 'F':
+      case 'G':
+        $scope.scale_tonic_name = char;
+        return $scope.scale_tonic_pitch = pitch_name_to_number(char);
+      case '#':
+      case '+':
+        $scope.scale_tonic_pitch += 1;
+        $scope.scale_tonic_pitch = (($scope.scale_tonic_pitch) % (ref$ = 12) + ref$) % ref$;
+        return $scope.scale_tonic_name = pitch_name($scope.scale_tonic_pitch);
+      case 'b':
+      case '-':
+        $scope.scale_tonic_pitch -= 1;
+        $scope.scale_tonic_pitch = (($scope.scale_tonic_pitch) % (ref$ = 12) + ref$) % ref$;
+        return $scope.scale_tonic_name = pitch_name($scope.scale_tonic_pitch);
+      }
+    };
+    $scope.setInstrument = function(instr){
+      if (instr != null) {
+        return $scope.instrument = instr;
+      }
+    };
+    $scope.setScale = function(s){
+      var ref$;
+      return $scope.scale = ((ref$ = s.modes) != null ? ref$[s.mode_index] : void 8) || s;
+    };
+    $scope.bodyClassNames = function(){
+      var hover, scale_tonic, ref$, scale_pitch_classes, ref1$, show_sharps, classes, n;
+      hover = $scope.hover;
+      scale_tonic = (ref$ = hover.scale_tonic_pitch) != null
+        ? ref$
+        : $scope.scale_tonic_pitch;
+      scale_pitch_classes = (ref$ = (ref1$ = hover.scale) != null ? ref1$.pitch_classes : void 8) != null
+        ? ref$
+        : $scope.scale.pitch_classes;
+      show_sharps = !(ref$ = FlatNoteNames[pitch_to_pitch_class(scale_tonic)].length === 1) !== !(ref1$ = /F/.exec(FlatNoteNames[pitch_to_pitch_class(scale_tonic)])) && (ref$ || ref1$);
+      classes = [];
+      classes.push(show_sharps ? 'hide-flat-labels' : 'hide-sharp-labels');
+      classes = classes.concat((function(){
+        var i$, ref$, len$, results$ = [];
+        for (i$ = 0, len$ = (ref$ = scale_pitch_classes).length; i$ < len$; ++i$) {
+          n = ref$[i$];
+          results$.push("scale-includes-relative-pitch-class-" + n);
+        }
+        return results$;
+      }()));
+      classes = classes.concat((function(){
+        var i$, ref$, len$, results$ = [];
+        for (i$ = 0, len$ = (ref$ = scale_pitch_classes).length; i$ < len$; ++i$) {
+          n = ref$[i$];
+          results$.push("scale-includes-pitch-class-" + pitch_to_pitch_class(n + scale_tonic));
+        }
+        return results$;
+      }()));
+      if (hover.pitch != null) {
+        classes.push("hover-note-relative-pitch-class-" + pitch_to_pitch_class(hover.pitch - scale_tonic));
+        classes.push("hover-note-pitch-class-" + pitch_to_pitch_class(hover.pitch));
+      }
+      return classes;
+    };
+    noteGrid = d3.music.noteGrid($scope, Style.fingerboard, document.querySelector('#fingerboard'));
+    d3.select('#scale-notes').call(noteGrid);
+    $scope.$watch(function(){
+      return noteGrid.update();
+    });
+    $('#fingerings .btn').click(function(){
+      var note_label_name;
+      $('#fingerings .btn').removeClass('btn-default');
+      $(this).addClass('btn-default');
+      note_label_name = $(this).text().replace(' ', '_').toLowerCase().replace('fingers', 'fingerings');
+      return $scope.$apply(function(){
+        return $scope.note_label = note_label_name;
+      });
+    });
+    angular.element(document).bind('touchmove', false);
+    return angular.element(document.body).removeClass('loading');
+  });
+}).call(this);
+
+(function(){
+  var FingerPositions, slice$ = [].slice, replace$ = ''.replace;
+  FingerPositions = 7;
   d3.music || (d3.music = {});
   d3.music.keyboard = function(model, attributes){
     var style, octaves, stroke_width, attrs, dispatcher, selection, update;
@@ -695,106 +652,30 @@
     };
     return my;
   };
-  module = angular.module('FingerboardApp', ['ui.bootstrap']);
-  this.FingerboardScalesCtrl = function($scope){
-    var noteGrid;
-    $scope.aboutText = $('#about-text').html();
-    $scope.scales = Scales;
-    $scope.instruments = Instruments;
-    $scope.instrument = Instruments.Violin;
-    $scope.scale = Scales[0].modes[0];
-    $scope.scale_tonic_name = 'C';
-    $scope.scale_tonic_pitch = 0;
-    $scope.hover = {
-      pitch_classes: null,
-      scale_tonic_pitch: null
+  function in$(x, arr){
+    var i = -1, l = arr.length >>> 0;
+    while (++i < l) if (x === arr[i] && i in arr) return true;
+    return false;
+  }
+  function curry$(f, bound){
+    var context,
+    _curry = function(args) {
+      return f.length > 1 ? function(){
+        var params = args ? args.concat() : [];
+        context = bound ? context || this : this;
+        return params.push.apply(params, arguments) <
+            f.length && arguments.length ?
+          _curry.call(context, params) : f.apply(context, params);
+      } : f;
     };
-    $scope.handleKey = function(event){
-      var char, ref$;
-      char = String.fromCharCode(event.charCode).toUpperCase();
-      switch (char) {
-      case 'A':
-      case 'B':
-      case 'C':
-      case 'D':
-      case 'E':
-      case 'F':
-      case 'G':
-        $scope.scale_tonic_name = char;
-        return $scope.scale_tonic_pitch = pitch_name_to_number(char);
-      case '#':
-      case '+':
-        $scope.scale_tonic_pitch += 1;
-        $scope.scale_tonic_pitch = (($scope.scale_tonic_pitch) % (ref$ = 12) + ref$) % ref$;
-        return $scope.scale_tonic_name = pitch_name($scope.scale_tonic_pitch);
-      case 'b':
-      case '-':
-        $scope.scale_tonic_pitch -= 1;
-        $scope.scale_tonic_pitch = (($scope.scale_tonic_pitch) % (ref$ = 12) + ref$) % ref$;
-        return $scope.scale_tonic_name = pitch_name($scope.scale_tonic_pitch);
-      }
-    };
-    $scope.setInstrument = function(instr){
-      if (instr != null) {
-        return $scope.instrument = instr;
-      }
-    };
-    $scope.setScale = function(s){
-      var ref$;
-      return $scope.scale = ((ref$ = s.modes) != null ? ref$[s.mode_index] : void 8) || s;
-    };
-    $scope.bodyClassNames = function(){
-      var hover, scale_tonic, ref$, scale_pitch_classes, ref1$, show_sharps, classes, n;
-      hover = $scope.hover;
-      scale_tonic = (ref$ = hover.scale_tonic_pitch) != null
-        ? ref$
-        : $scope.scale_tonic_pitch;
-      scale_pitch_classes = (ref$ = (ref1$ = hover.scale) != null ? ref1$.pitch_classes : void 8) != null
-        ? ref$
-        : $scope.scale.pitch_classes;
-      show_sharps = !(ref$ = FlatNoteNames[pitch_to_pitch_class(scale_tonic)].length === 1) !== !(ref1$ = /F/.exec(FlatNoteNames[pitch_to_pitch_class(scale_tonic)])) && (ref$ || ref1$);
-      classes = [];
-      classes.push(show_sharps ? 'hide-flat-labels' : 'hide-sharp-labels');
-      classes = classes.concat((function(){
-        var i$, ref$, len$, results$ = [];
-        for (i$ = 0, len$ = (ref$ = scale_pitch_classes).length; i$ < len$; ++i$) {
-          n = ref$[i$];
-          results$.push("scale-includes-relative-pitch-class-" + n);
-        }
-        return results$;
-      }()));
-      classes = classes.concat((function(){
-        var i$, ref$, len$, results$ = [];
-        for (i$ = 0, len$ = (ref$ = scale_pitch_classes).length; i$ < len$; ++i$) {
-          n = ref$[i$];
-          results$.push("scale-includes-pitch-class-" + pitch_to_pitch_class(n + scale_tonic));
-        }
-        return results$;
-      }()));
-      if (hover.pitch != null) {
-        classes.push("hover-note-relative-pitch-class-" + pitch_to_pitch_class(hover.pitch - scale_tonic));
-        classes.push("hover-note-pitch-class-" + pitch_to_pitch_class(hover.pitch));
-      }
-      return classes;
-    };
-    noteGrid = d3.music.noteGrid($scope, Style.fingerboard, document.querySelector('#fingerboard'));
-    d3.select('#scale-notes').call(noteGrid);
-    $scope.$watch(function(){
-      return noteGrid.update();
-    });
-    $('#fingerings .btn').click(function(){
-      var note_label_name;
-      $('#fingerings .btn').removeClass('btn-default');
-      $(this).addClass('btn-default');
-      note_label_name = $(this).text().replace(' ', '_').toLowerCase().replace('fingers', 'fingerings');
-      return $scope.$apply(function(){
-        return $scope.note_label = note_label_name;
-      });
-    });
-    angular.element(document).bind('touchmove', false);
-    return angular.element(document.body).removeClass('loading');
-  };
-  module.directive('fingerboard', function(){
+    return _curry();
+  }
+}).call(this);
+
+(function(){
+  var directives;
+  directives = angular.module('music.directives', []);
+  directives.directive('fingerboard', function(){
     return {
       restrict: 'CE',
       link: function(scope, element, attrs){
@@ -825,7 +706,7 @@
       }
     };
   });
-  module.directive('pitchConstellation', function(){
+  directives.directive('pitchConstellation', function(){
     return {
       restrict: 'CE',
       replace: true,
@@ -842,7 +723,7 @@
       }
     };
   });
-  module.directive('keyboard', function(){
+  directives.directive('keyboard', function(){
     return {
       restrict: 'CE',
       link: function(scope, element, attrs){
@@ -874,7 +755,10 @@
       }
     };
   });
-  module.directive('unsafePopoverPopup', function(){
+}).call(this);
+
+(function(){
+  angular.module('unsafe-popover', []).directive('unsafePopoverPopup', function(){
     return {
       restrict: 'EA',
       replace: true,
@@ -885,27 +769,183 @@
         animation: '&',
         isOpen: '&'
       },
-      templateUrl: 'template/popover.html'
+      templateUrl: 'templates/popover.html'
     };
   }).directive('unsafePopover', function($tooltip){
     return $tooltip('unsafePopover', 'popover', 'click');
   });
-  function in$(x, arr){
-    var i = -1, l = arr.length >>> 0;
-    while (++i < l) if (x === arr[i] && i in arr) return true;
-    return false;
-  }
-  function curry$(f, bound){
-    var context,
-    _curry = function(args) {
-      return f.length > 1 ? function(){
-        var params = args ? args.concat() : [];
-        context = bound ? context || this : this;
-        return params.push.apply(params, arguments) <
-            f.length && arguments.length ?
-          _curry.call(context, params) : f.apply(context, params);
-      } : f;
+}).call(this);
+
+(function(){
+  var SharpNoteNames, FlatNoteNames, ScaleDegreeNames, Pitches, pitch_name_to_number, pitch_number_to_name, pitch_to_pitch_class, pitch_name, Scales, Instruments, fingerboard_position_pitch, exports, slice$ = [].slice, join$ = [].join;
+  SharpNoteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'].map(function(it){
+    return it.replace(/#/, '\u266F');
+  });
+  FlatNoteNames = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'].map(function(it){
+    return it.replace(/b/, '\u266D');
+  });
+  ScaleDegreeNames = ['1', 'b2', '2', 'b3', '3', '4', 'b5', '5', 'b6', '6', 'b7', '7'].map(function(it){
+    return it.replace(/(\d)/, '$1\u0302').replace(/b/, '\u266D');
+  });
+  Pitches = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+  pitch_name_to_number = function(pitch_name){
+    var pitch;
+    pitch = FlatNoteNames.indexOf(pitch_name);
+    if (!(pitch >= 0)) {
+      pitch = SharpNoteNames.indexOf(pitch_name);
+    }
+    return pitch;
+  };
+  pitch_number_to_name = function(pitch_number){
+    var pitch;
+    pitch = pitch_to_pitch_class(pitch_number);
+    return SharpNoteNames.indexOf(pitch) || FlatNoteNames.indexOf(pitch);
+  };
+  pitch_to_pitch_class = function(pitch){
+    var ref$;
+    return ((pitch) % (ref$ = 12) + ref$) % ref$;
+  };
+  pitch_name = function(pitch, options){
+    var pitch_class, flatName, sharpName, name;
+    options == null && (options = {});
+    pitch_class = pitch_to_pitch_class(pitch);
+    flatName = FlatNoteNames[pitch_class];
+    sharpName = SharpNoteNames[pitch_class];
+    name = options.sharp ? sharpName : flatName;
+    if (options.flat && options.sharp && flatName !== sharpName) {
+      name = flatName + "/\n" + sharpName;
+    }
+    return name;
+  };
+  Scales = [
+    {
+      name: 'Diatonic Major',
+      pitch_classes: [0, 2, 4, 5, 7, 9, 11],
+      mode_names: ['Ionian', 'Dorian', 'Phrygian', 'Lydian', 'Mixolydian', 'Aeolian', 'Locrian']
+    }, {
+      name: 'Natural Minor',
+      pitch_classes: [0, 2, 3, 5, 7, 8, 10],
+      mode_of: 'Diatonic Major'
+    }, {
+      name: 'Major Pentatonic',
+      pitch_classes: [0, 2, 4, 7, 9],
+      mode_names: ['Major Pentatonic', 'Suspended Pentatonic', 'Man Gong', 'Ritusen', 'Minor Pentatonic']
+    }, {
+      name: 'Minor Pentatonic',
+      pitch_classes: [0, 3, 5, 7, 10],
+      mode_of: 'Major Pentatonic'
+    }, {
+      name: 'Melodic Minor',
+      pitch_classes: [0, 2, 3, 5, 7, 9, 11],
+      mode_names: ['Jazz Minor', 'Dorian b2', 'Lydian Augmented', 'Lydian Dominant', 'Mixolydian b6', 'Semilocrian', 'Superlocrian']
+    }, {
+      name: 'Harmonic Minor',
+      pitch_classes: [0, 2, 3, 5, 7, 8, 11],
+      mode_names: ['Harmonic Minor', 'Locrian #6', 'Ionian Augmented', 'Romanian', 'Phrygian Dominant', 'Lydian #2', 'Ultralocrian']
+    }, {
+      name: 'Blues',
+      pitch_classes: [0, 3, 5, 6, 7, 10]
+    }, {
+      name: 'Freygish',
+      pitch_classes: [0, 1, 4, 5, 7, 8, 10]
+    }, {
+      name: 'Whole Tone',
+      pitch_classes: [0, 2, 4, 6, 8, 10]
+    }, {
+      name: 'Octatonic',
+      pitch_classes: [0, 2, 3, 5, 6, 8, 9, 11]
+    }
+  ];
+  (function(){
+    var i$, ref$, len$, scale, name, mode_names, pitch_classes, rotate, mode_of, base, i, results$ = [];
+    for (i$ = 0, len$ = (ref$ = Scales).length; i$ < len$; ++i$) {
+      scale = ref$[i$], name = scale.name, mode_names = scale.mode_names, pitch_classes = scale.pitch_classes;
+      Scales[name] = scale;
+    }
+    rotate = function(pitch_classes, i){
+      var ref$;
+      i = ((i) % (ref$ = pitch_classes.length) + ref$) % ref$;
+      pitch_classes = pitch_classes.slice(i).concat(slice$.call(pitch_classes, 0, i));
+      return pitch_classes.map(function(it){
+        return pitch_to_pitch_class(it - pitch_classes[0]);
+      });
     };
-    return _curry();
+    for (i$ = 0, len$ = (ref$ = Scales).length; i$ < len$; ++i$) {
+      scale = ref$[i$], name = scale.name, mode_names = scale.mode_names, mode_of = scale.mode_of, pitch_classes = scale.pitch_classes;
+      scale.base = base = Scales[mode_of];
+      mode_names || (mode_names = base != null ? base.mode_names : void 8);
+      if (mode_names != null) {
+        scale.mode_index = 0;
+        if (base != null) {
+          scale.mode_index = (fn$()).filter(fn1$)[0];
+        }
+        results$.push(scale.modes = (fn2$()));
+      }
+    }
+    return results$;
+    function fn$(){
+      var i$, to$, results$ = [];
+      for (i$ = 0, to$ = pitch_classes.length; i$ < to$; ++i$) {
+        results$.push(i$);
+      }
+      return results$;
+    }
+    function fn1$(i){
+      return join$.call(rotate(base.pitch_classes, i), ',') === join$.call(pitch_classes, ',');
+    }
+    function fn2$(){
+      var i$, ref$, len$, results$ = [];
+      for (i$ = 0, len$ = (ref$ = mode_names).length; i$ < len$; ++i$) {
+        i = i$;
+        name = ref$[i$];
+        results$.push({
+          name: name.replace(/#/, '\u266F').replace(/\bb(\d)/, '\u266D$1'),
+          pitch_classes: rotate((base != null ? base.pitch_classes : void 8) || pitch_classes, i),
+          parent: scale
+        });
+      }
+      return results$;
+    }
+  })();
+  Instruments = [
+    {
+      name: 'Violin',
+      string_pitches: [7, 14, 21, 28]
+    }, {
+      name: 'Viola',
+      string_pitches: [0, 7, 14, 21]
+    }, {
+      name: 'Cello',
+      string_pitches: [0, 7, 14, 21]
+    }
+  ];
+  (function(){
+    var i$, ref$, len$, instrument, results$ = [];
+    for (i$ = 0, len$ = (ref$ = Instruments).length; i$ < len$; ++i$) {
+      instrument = ref$[i$];
+      results$.push(Instruments[instrument.name] = instrument);
+    }
+    return results$;
+  })();
+  fingerboard_position_pitch = function(arg$){
+    var instrument, string_number, fret_number;
+    instrument = arg$.instrument, string_number = arg$.string_number, fret_number = arg$.fret_number;
+    return instrument.string_pitches[string_number] + fret_number;
+  };
+  exports = {
+    fingerboard_position_pitch: fingerboard_position_pitch,
+    FlatNoteNames: FlatNoteNames,
+    Instruments: Instruments,
+    pitch_name: pitch_name,
+    pitch_to_pitch_class: pitch_to_pitch_class,
+    Pitches: Pitches,
+    ScaleDegreeNames: ScaleDegreeNames,
+    Scales: Scales,
+    SharpNoteNames: SharpNoteNames
+  };
+  if ((typeof module != 'undefined' && module !== null ? module.exports : void 8) != null) {
+    module.exports = exports;
+  } else {
+    this.MusicTheory = exports;
   }
 }).call(this);
