@@ -3,21 +3,16 @@ module.exports = (grunt) ->
     pkg: grunt.file.readJSON 'package.json'
     livescript:
       debug:
-        expand: true
-        cwd: 'app'
-        src: '*.ls'
-        dest: 'build'
-        ext: '.js'
+        files:
+          'build/js/fingerboard.js': 'app/js/**/*.ls'
         options:
+          join: true
           sourceMap: true
       release:
-        expand: true
-        cwd: 'app'
-        src: '*.ls'
-        dest: 'release'
-        ext: '.js'
+        files:
+          'release/js/fingerboard.js': 'app/js/**/*.ls'
         options:
-          sourceMap: false
+          join: true
     coffeelint:
       app: ['**/*.coffee', '!**/node_modules/**', '!Gruntfile.coffee']
       gruntfile: '!Gruntfile.coffee'
