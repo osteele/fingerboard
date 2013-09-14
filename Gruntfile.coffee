@@ -100,16 +100,7 @@ module.exports = (grunt) ->
         files: ['**/*.ls', '!**/node_modules/**']
         tasks: ['livescript:debug']
 
-  grunt.loadNpmTasks 'grunt-coffeelint'
-  grunt.loadNpmTasks 'grunt-contrib-coffee'
-  grunt.loadNpmTasks 'grunt-contrib-connect'
-  grunt.loadNpmTasks 'grunt-contrib-copy'
-  grunt.loadNpmTasks 'grunt-contrib-jade'
-  grunt.loadNpmTasks 'grunt-contrib-sass'
-  grunt.loadNpmTasks 'grunt-contrib-watch'
-  grunt.loadNpmTasks 'grunt-github-pages'
-  grunt.loadNpmTasks 'grunt-livescript'
-  grunt.loadNpmTasks 'grunt-notify'
+  require('load-grunt-tasks')(grunt)
 
   grunt.registerTask 'build', ['livescript:debug', 'jade:debug', 'sass:debug', 'copy:debug']
   grunt.registerTask 'build:release', ['livescript:release', 'jade:release', 'sass:release', 'copy:release']
