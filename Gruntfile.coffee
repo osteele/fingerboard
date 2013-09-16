@@ -5,33 +5,23 @@ module.exports = (grunt) ->
       build_directory: '<%= options.dev_directory %>'
       dev_directory: 'build'
       release_directory: 'release'
-
-    context:
-      release:
-        options:
-          build_directory: '<%= options.release_directory %>'
-        coffee:
-          options:
-            sourceMap: false
-        jade:
-          options:
-            pretty: false
-        sass:
-          options:
-            sourcemap: false
-            style: 'compressed'
+      ':release':
+        build_directory: '<%= options.release_directory %>'
 
     livescript:
       app:
         files:
           '<%= options.build_directory %>/js/fingerboard.js': 'app/js/**/*.ls'
-        options:
-          join: true
-          sourceMap: true
+      options:
+        join: true
+        sourceMap: true
+        ':release':
+          sourceMap: false
 
     clean:
       dev: '<%= options.dev_directory %>'
       release: '<%= options.release_directory %>/*'
+      target: '<%= options.build_directory %>/*'
 
     coffeelint:
       app: ['**/*.coffee', '!**/node_modules/**', '!Gruntfile.coffee']
@@ -66,6 +56,8 @@ module.exports = (grunt) ->
         ext: '.html'
       options:
         pretty: true
+        ':release':
+          pretty: false
 
     sass:
       app:
@@ -77,6 +69,9 @@ module.exports = (grunt) ->
         filter: 'isFile'
       options:
         sourcemap: true
+        ':release':
+          sourcemap: false
+          style: 'compressed'
 
     watch:
       options:
@@ -99,17 +94,22 @@ module.exports = (grunt) ->
 
   require('load-grunt-tasks')(grunt)
 
-  grunt.registerTask 'context', (context) ->
-    copyContext = (obj, prefix='') ->
+  grunt.registerTask 'context', (contextName) ->
+    contextKey = ":#{contextName}"
+    installContexts = (obj) ->
+      recursiveMerge obj, obj[contextKey] if contextKey of obj
       for k, v of obj
-        if typeof v == 'object'
-          copyContext v, prefix + k + '.'
+        installContexts v if typeof v == 'object' and not k.match(/^:/)
+    recursiveMerge = (target, source) ->
+      for k, v of source
+        if k of target and typeof v == 'object'
+          recursiveMerge target[k], v
         else
-          grunt.config.set(prefix + k, v)
-    copyContext grunt.config.get(['context', context])
+          target[k] = v
+    installContexts grunt.config.data
     return
 
-  grunt.registerTask 'build', ['clean', 'livescript', 'jade', 'sass', 'copy']
+  grunt.registerTask 'build', ['clean:target', 'livescript', 'jade', 'sass', 'copy']
   grunt.registerTask 'build:release', ['context:release', 'build']
   grunt.registerTask 'deploy', ['build:release', 'githubPages:target']
   grunt.registerTask 'default', ['build', 'connect', 'watch']
