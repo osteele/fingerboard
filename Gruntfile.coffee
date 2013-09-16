@@ -8,16 +8,6 @@ module.exports = (grunt) ->
       ':release':
         build_directory: '<%= options.release_directory %>'
 
-    livescript:
-      app:
-        files:
-          '<%= options.build_directory %>/js/fingerboard.js': 'app/js/**/*.ls'
-      options:
-        join: true
-        sourceMap: true
-        ':release':
-          sourceMap: false
-
     clean:
       dev: '<%= options.dev_directory %>'
       release: '<%= options.release_directory %>/*'
@@ -58,6 +48,13 @@ module.exports = (grunt) ->
         pretty: true
         ':release':
           pretty: false
+
+    livescript:
+      app:
+        files:
+          '<%= options.build_directory %>/js/fingerboard.js': 'app/js/**/*.ls'
+      options:
+        join: true
 
     sass:
       app:
