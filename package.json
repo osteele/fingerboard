@@ -14,17 +14,17 @@
   "devDependencies": {
     "grunt": "~0.4.x",
     "grunt-coffeelint": "0.0.x",
-    "grunt-contrib-watch": "~0.4.x",
+    "grunt-contrib-clean": "~0.5.x",
     "grunt-contrib-coffee": "~0.7.x",
-    "grunt-jade": "~0.4.x",
+    "grunt-contrib-connect": "~0.3.x",
+    "grunt-contrib-copy": "~0.4.x",
     "grunt-contrib-jade": "~0.7.x",
     "grunt-contrib-sass": "~0.4.x",
+    "grunt-contrib-watch": "~0.4.x",
     "grunt-github-pages": "0.0.x",
-    "grunt-contrib-copy": "~0.4.x",
-    "marked": "~0.2.x",
-    "grunt-notify": "~0.2.x",
     "grunt-livescript": "~0.5.x",
-    "grunt-contrib-connect": "~0.3.x",
-    "load-grunt-tasks": "~0.1.x"
+    "grunt-notify": "~0.2.x",
+    "load-grunt-tasks": "~0.1.x",
+    "marked": "~0.2.x"
   }
 }

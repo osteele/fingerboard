@@ -1,108 +1,115 @@
 module.exports = (grunt) ->
   grunt.initConfig
-    pkg: grunt.file.readJSON 'package.json'
+
+    options:
+      build_directory: '<%= options.dev_directory %>'
+      dev_directory: 'build'
+      release_directory: 'release'
+
+    context:
+      release:
+        options:
+          build_directory: '<%= options.release_directory %>'
+        coffee:
+          options:
+            sourceMap: false
+        jade:
+          options:
+            pretty: false
+        sass:
+          options:
+            sourcemap: false
+            style: 'compressed'
+
     livescript:
-      debug:
+      app:
         files:
-          'build/js/fingerboard.js': 'app/js/**/*.ls'
+          '<%= options.build_directory %>/js/fingerboard.js': 'app/js/**/*.ls'
         options:
           join: true
           sourceMap: true
-      release:
-        files:
-          'release/js/fingerboard.js': 'app/js/**/*.ls'
-        options:
-          join: true
+
+    clean:
+      dev: '<%= options.dev_directory %>'
+      release: '<%= options.release_directory %>/*'
+
     coffeelint:
       app: ['**/*.coffee', '!**/node_modules/**', '!Gruntfile.coffee']
-      gruntfile: '!Gruntfile.coffee'
+      gruntfile: 'Gruntfile.coffee'
       options:
         max_line_length:
           value: 120
+
     connect:
       server:
         options:
-          base: 'build'
+          base: '<%= options.build_directory %>'
+
     copy:
-      debug:
+      app:
         expand: true
         cwd: 'app'
-        dest: 'build'
-        src: ['**/*.html', '**/*.jpg', '**/*.png']
+        dest: '<%= options.build_directory %>'
+        src: ['**/*', '!**/*.{coffee,jade,ls,scss}']
         filter: 'isFile'
-      release:
-        expand: true
-        cwd: 'app'
-        dest: 'release'
-        src: ['**/*.html', '**/*.jpg', '**/*.png']
-        filter: 'isFile'
+
     githubPages:
       target:
-        src: 'release'
+        src: '<%= options.release_directory %>'
+
     jade:
-      debug:
+      app:
         expand: true
         cwd: 'app'
         src: '**/*.jade'
-        dest: 'build'
+        dest: '<%= options.build_directory %>'
         ext: '.html'
-        options:
-          pretty: true
-          data:
-            cdn_scheme: 'http:'
-            debug: true
-      release:
-        expand: true
-        cwd: 'app'
-        src: '**/*.jade'
-        dest: 'release'
-        ext: '.html'
-        options:
-          data:
-            cdn_scheme: ''
-            debug: false
+      options:
+        pretty: true
+
     sass:
-      debug:
+      app:
         expand: true
         cwd: 'app'
-        dest: 'build'
+        dest: '<%= options.build_directory %>'
         src: ['css/**.scss']
         ext: '.css'
         filter: 'isFile'
-        options:
-          sourcemap: true
-      release:
-        expand: true
-        cwd: 'app'
-        dest: 'release'
-        src: ['css/**.scss']
-        ext: '.css'
-        filter: 'isFile'
-        options:
-          sourcemap: false
-          style: 'compressed'
+      options:
+        sourcemap: true
+
     watch:
       options:
         livereload: true
       copy:
-        files: ['app/img/**/*', 'app/**/*.html']
+        files: ['app/**/*', '!app/**/*.{coffee,jade,ls,scss}']
         tasks: ['copy:debug']
       gruntfile:
         files: 'Gruntfile.coffee'
         tasks: ['coffeelint:gruntfile']
       sass:
         files: ['app/**/main.scss']
-        tasks: ['sass:debug']
+        tasks: ['sass']
       jade:
         files: ['app/**/*.jade']
-        tasks: ['jade:debug']
+        tasks: ['jade']
       scripts:
         files: ['**/*.ls', '!**/node_modules/**']
-        tasks: ['livescript:debug']
+        tasks: ['livescript']
 
   require('load-grunt-tasks')(grunt)
 
-  grunt.registerTask 'build', ['livescript:debug', 'jade:debug', 'sass:debug', 'copy:debug']
-  grunt.registerTask 'build:release', ['livescript:release', 'jade:release', 'sass:release', 'copy:release']
+  grunt.registerTask 'context', (context) ->
+    copyContext = (obj, prefix='') ->
+      for k, v of obj
+        if typeof v == 'object'
+          copyContext v, prefix + k + '.'
+        else
+          grunt.config.set(prefix + k, v)
+    copyContext grunt.config.get(['context', context])
+    return
+
+  grunt.registerTask 'build', ['clean', 'livescript', 'jade', 'sass', 'copy']
+  grunt.registerTask 'build:release', ['context:release', 'build']
   grunt.registerTask 'deploy', ['build:release', 'githubPages:target']
   grunt.registerTask 'default', ['build', 'connect', 'watch']

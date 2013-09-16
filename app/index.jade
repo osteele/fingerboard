@@ -8,15 +8,15 @@ html(lang="en", ng-app="FingerboardApp")
     meta(name="format-detection", content="telephone=no")
     link(rel="icon", type="image/png", href="img/fretboard-icon.png")
 
-    link(href="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.0.0-rc2/css/bootstrap.min.css", rel="stylesheet", type="text/css")
-    link(href="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/font-awesome/3.2.1/css/font-awesome.min.css", rel="stylesheet")
+    link(href="http://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.0.0-rc2/css/bootstrap.min.css", rel="stylesheet", type="text/css")
+    link(href="http://cdnjs.cloudflare.com/ajax/libs/font-awesome/3.2.1/css/font-awesome.min.css", rel="stylesheet")
     link(href="http://fonts.googleapis.com/css?family=Abel|Open+Sans:400,600", rel="stylesheet")
     link(href="./css/main.css", rel="stylesheet", type="text/css")
 
-    script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/zepto/1.0/zepto.min.js", defer)
-    script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/angular.js/1.1.5/angular.min.js", defer)
-    script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.5.0/ui-bootstrap-tpls.min.js", defer)
-    script(src="#{cdn_scheme}//cdnjs.cloudflare.com/ajax/libs/d3/3.2.2/d3.v3.min.js", defer)
+    script(src="http://cdnjs.cloudflare.com/ajax/libs/zepto/1.0/zepto.min.js", defer)
+    script(src="http://cdnjs.cloudflare.com/ajax/libs/angular.js/1.1.5/angular.min.js", defer)
+    script(src="http://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.5.0/ui-bootstrap-tpls.min.js", defer)
+    script(src="http://cdnjs.cloudflare.com/ajax/libs/d3/3.2.2/d3.v3.min.js", defer)
 
     script(src="./js/fingerboard.js", defer)
 
@@ -100,6 +100,3 @@ html(lang="en", ng-app="FingerboardApp")
         feMerge
           feMergeNode(in="coloredBlur")
           feMergeNode(in="SourceGraphic")
-
-    if debug
-      script(src="http://localhost:35729/livereload.js")
