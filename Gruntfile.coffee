@@ -30,12 +30,19 @@ module.exports = (grunt) ->
         expand: true
         cwd: 'app'
         dest: '<%= options.build_directory %>'
-        src: ['**/*', '!**/*.{coffee,jade,ls,scss}']
+        src: ['**/*', '!**/*.{coffee,jade,ls,scss,png,jpg,gif}']
         filter: 'isFile'
 
     githubPages:
       target:
         src: '<%= options.release_directory %>'
+
+    imagemin:
+      app:
+        expand: true
+        cwd: 'app'
+        src: '**/*.{png,jpg,gif}'
+        dest: '<%= options.build_directory %>'
 
     jade:
       app:
@@ -74,17 +81,17 @@ module.exports = (grunt) ->
       options:
         livereload: true
       copy:
-        files: ['app/**/*', '!app/**/*.{coffee,jade,ls,scss}']
-        tasks: ['copy:debug']
+        files: ['app/**/*', '!app/**/*.{coffee,jade,ls,scss,png,jpg,gif}']
+        tasks: ['copy', 'imagemin']
       gruntfile:
         files: 'Gruntfile.coffee'
         tasks: ['coffeelint:gruntfile']
-      sass:
-        files: ['app/**/main.scss']
-        tasks: ['sass']
       jade:
         files: ['app/**/*.jade']
         tasks: ['jade']
+      sass:
+        files: ['app/**/main.scss']
+        tasks: ['sass']
       scripts:
         files: ['**/*.ls', '!**/node_modules/**']
         tasks: ['livescript']
@@ -106,7 +113,7 @@ module.exports = (grunt) ->
     installContexts grunt.config.data
     return
 
-  grunt.registerTask 'build', ['clean:target', 'livescript', 'jade', 'sass', 'copy']
+  grunt.registerTask 'build', ['clean:target', 'livescript', 'jade', 'sass', 'copy', 'imagemin']
   grunt.registerTask 'build:release', ['context:release', 'build']
   grunt.registerTask 'deploy', ['build:release', 'githubPages:target']
   grunt.registerTask 'default', ['build', 'connect', 'watch']
