@@ -1,17 +1,17 @@
 module.exports = (grunt) ->
   grunt.initConfig
 
-    options:
-      build_directory: '<%= options.dev_directory %>'
-      dev_directory: 'build'
-      release_directory: 'release'
+    directories:
+      build: '<%= options.dev %>'
+      dev: 'build'
+      release: 'release'
       ':release':
-        build_directory: '<%= options.release_directory %>'
+        build: '<%= directories.release %>'
 
     clean:
-      dev: '<%= options.dev_directory %>'
-      release: '<%= options.release_directory %>/*'
-      target: '<%= options.build_directory %>/*'
+      dev: '<%= directories.dev %>'
+      release: '<%= directories.release %>/*'
+      target: '<%= directories.build %>/*'
 
     coffeelint:
       app: ['**/*.coffee', '!**/node_modules/**', '!Gruntfile.coffee']
@@ -23,33 +23,33 @@ module.exports = (grunt) ->
     connect:
       server:
         options:
-          base: '<%= options.build_directory %>'
+          base: '<%= directories.build %>'
 
     copy:
       app:
         expand: true
         cwd: 'app'
-        dest: '<%= options.build_directory %>'
+        dest: '<%= directories.build %>'
         src: ['**/*', '!**/*.{coffee,jade,ls,scss,png,jpg,gif}']
         filter: 'isFile'
 
     githubPages:
       target:
-        src: '<%= options.release_directory %>'
+        src: '<%= directories.release %>'
 
     imagemin:
       app:
         expand: true
         cwd: 'app'
         src: '**/*.{png,jpg,gif}'
-        dest: '<%= options.build_directory %>'
+        dest: '<%= directories.build %>'
 
     jade:
       app:
         expand: true
         cwd: 'app'
         src: '**/*.jade'
-        dest: '<%= options.build_directory %>'
+        dest: '<%= directories.build %>'
         ext: '.html'
       options:
         pretty: true
@@ -59,7 +59,7 @@ module.exports = (grunt) ->
     livescript:
       app:
         files:
-          '<%= options.build_directory %>/js/fingerboard.js': 'app/js/**/*.ls'
+          '<%= directories.build %>/js/fingerboard.js': 'app/js/**/*.ls'
       options:
         join: true
 
@@ -67,7 +67,7 @@ module.exports = (grunt) ->
       app:
         expand: true
         cwd: 'app'
-        dest: '<%= options.build_directory %>'
+        dest: '<%= directories.build %>'
         src: ['css/**.scss']
         ext: '.css'
         filter: 'isFile'
