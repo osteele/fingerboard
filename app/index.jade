@@ -21,7 +21,10 @@ html(lang="en", ng-app="FingerboardApp")
     script(src="./js/fingerboard.js", defer)
 
   body.loading(ng-controller="FingerboardScalesCtrl", ng-class="bodyClassNames()", ng-keypress="handleKey($event)")
-    h1 Fingerboard Scales
+    .container
+      ol.breadcrumb
+        li: a(href='http://osteele.github.io/#music') Music
+        li: a(href='#') Fingerboard
 
     .module.panel
       h2.panel-title
@@ -62,8 +65,8 @@ html(lang="en", ng-app="FingerboardApp")
 
     a#fork-me(href="https://github.com/osteele/fingerboard", target="_blank")
 
-    #about-container
-      i#about(unsafe-popover="{{aboutText}}", popover-placement="bottom", popover-trigger="mouseenter").icon-info-sign
+    //- #about-container
+    //-   i#about(unsafe-popover="{{aboutText}}", popover-placement="left", popover-trigger="mouseenter").icon-info-sign
 
     #templates
       #about-text
