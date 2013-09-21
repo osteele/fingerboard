@@ -2,7 +2,7 @@ module.exports = (grunt) ->
   grunt.initConfig
 
     directories:
-      build: '<%= options.dev %>'
+      build: '<%= directories.dev %>'
       dev: 'build'
       release: 'release'
       ':release':
