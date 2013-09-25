@@ -77,6 +77,9 @@ module.exports = (grunt) ->
           sourcemap: false
           style: 'compressed'
 
+    update:
+      tasks: ['livescript', 'jade', 'sass', 'copy', 'imagemin']
+
     watch:
       options:
         livereload: true
@@ -116,4 +119,4 @@ module.exports = (grunt) ->
   grunt.registerTask 'build', ['clean:target', 'livescript', 'jade', 'sass', 'copy', 'imagemin']
   grunt.registerTask 'build:release', ['context:release', 'build']
   grunt.registerTask 'deploy', ['build:release', 'githubPages:target']
-  grunt.registerTask 'default', ['build', 'connect', 'watch']
+  grunt.registerTask 'default', ['update', 'connect', 'watch']
