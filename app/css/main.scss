@@ -23,6 +23,8 @@ h1 {
   font-size: 40px;
   padding-left: 10px;
   color: white;
+
+  .breadcrumb { background-color: inherit; }
 }
 
 .module {
@@ -100,7 +102,7 @@ $fifth-color: rgb(192, 192, 255);
 #about {
   position: absolute;
   top: 22px;
-  left: 302px;
+  left: 342px;
   color: gray;
   cursor: pointer;
   @include vendor-prefix(transition, color 0.25s);
