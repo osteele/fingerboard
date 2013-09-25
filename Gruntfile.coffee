@@ -2,11 +2,10 @@ module.exports = (grunt) ->
   grunt.initConfig
 
     directories:
-      build: '<%= directories.dev %>'
       dev: 'build'
       release: 'release'
-      ':release':
-        build: '<%= directories.release %>'
+      build: '<%= directories.dev %>'
+      build$release: '<%= directories.release %>'
 
     clean:
       dev: '<%= directories.dev %>'
@@ -53,8 +52,7 @@ module.exports = (grunt) ->
         ext: '.html'
       options:
         pretty: true
-        ':release':
-          pretty: false
+        pretty$release: false
 
     livescript:
       app:
@@ -73,7 +71,7 @@ module.exports = (grunt) ->
         filter: 'isFile'
       options:
         sourcemap: true
-        ':release':
+        _release:
           sourcemap: false
           style: 'compressed'
 
@@ -101,22 +99,7 @@ module.exports = (grunt) ->
 
   require('load-grunt-tasks')(grunt)
 
-  grunt.registerTask 'context', (contextName) ->
-    contextKey = ":#{contextName}"
-    installContexts = (obj) ->
-      recursiveMerge obj, obj[contextKey] if contextKey of obj
-      for k, v of obj
-        installContexts v if typeof v == 'object' and not k.match(/^:/)
-    recursiveMerge = (target, source) ->
-      for k, v of source
-        if k of target and typeof v == 'object'
-          recursiveMerge target[k], v
-        else
-          target[k] = v
-    installContexts grunt.config.data
-    return
-
   grunt.registerTask 'build', ['clean:target', 'livescript', 'jade', 'sass', 'copy', 'imagemin']
-  grunt.registerTask 'build:release', ['context:release', 'build']
+  grunt.registerTask 'build:release', ['contextualize:release', 'build']
   grunt.registerTask 'deploy', ['build:release', 'githubPages:target']
   grunt.registerTask 'default', ['update', 'connect', 'watch']

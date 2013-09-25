@@ -27,6 +27,7 @@
     "grunt-notify": "~0.2.13",
     "load-grunt-tasks": "~0.1.0",
     "marked": "~0.2.9",
-    "grunt-update": "~0.2.0"
+    "grunt-update": "~0.2.0",
+    "grunt-contextualize": "~0.2.1"
   }
 }
