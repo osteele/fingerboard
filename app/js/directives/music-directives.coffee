@@ -8,6 +8,7 @@ directives.directive 'fingerboard', ->
     scope.$watch ->
       fingerboard.attr 'noteLabel', scope.noteLabel
       fingerboard.attr 'scale', scope.scale
+      fingerboard.attr 'instrument', scope.instrument
       fingerboard.attr 'tonicPitch', scope.scaleTonicPitch
     fingerboard.on 'tapPitch', (pitch) ->
       scope.$apply ->

@@ -2,9 +2,8 @@ FingerPositions = 7
 
 d3.music or= {}
 
-d3.music.keyboard = (model, attributes) ->
-  style = attributes
-  octaves = attributes.octaves
+d3.music.keyboard = (model, style) ->
+  octaves = style.octaves
   strokeWidth = 1
   attrs =
     scale: model.scale
@@ -91,9 +90,7 @@ d3.music.keyboard = (model, attributes) ->
   return my
 
 
-d3.music.pitchConstellation = (pitchClasses, attributes) ->
-  style = attributes
-
+d3.music.pitchConstellation = (pitchClasses, style) ->
   (selection) ->
     r = style.constellationRadius
     noteRadius = style.pitchRadius
@@ -132,8 +129,7 @@ d3.music.pitchConstellation = (pitchClasses, attributes) ->
           .attr('r', noteRadius)
 
 
-d3.music.fingerboard = (model, attributes) ->
-  style = attributes
+d3.music.fingerboard = (model, style) ->
   label_sets = ['notes', 'fingerings', 'scale-degrees']
   dispatcher = d3.dispatch('focusPitch', 'blurPitch', 'tapPitch')
   attrs =
