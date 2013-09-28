@@ -52,7 +52,7 @@ html(lang="en", ng-app="FingerboardApp")
         .scale.pull-left(ng-repeat="s in scales", ng-class="{selected: s == scale || s == scale.parent}", ng-click="setScale(s)",
             ng-mouseover="hover.scale = s", ng-mouseout="hover.scale = null")
           h3 {{s.name}}
-          pitch-constellation(pitches="s.pitch_classes")
+          pitch-constellation(pitches="s.pitchClasses")
 
       .clearfix
       h2.panel-title(ng-show="scale.modes || scale.parent.modes") Modes of the {{scale.parent.base.name || scale.parent.name}} Scale
@@ -60,7 +60,7 @@ html(lang="en", ng-app="FingerboardApp")
         .scale.pull-left(ng-repeat="s in (scale.modes || scale.parent.modes)", ng-class="{selected: s == scale}", ng-click="setScale(s)",
             ng-mouseover="hover.scale = s", ng-mouseout="hover.scale = null")
           h3 {{s.name}}
-          pitch-constellation(pitches="s.pitch_classes")
+          pitch-constellation(pitches="s.pitchClasses")
 
     #scale-notes.visible-lg
 

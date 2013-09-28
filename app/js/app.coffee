@@ -11,17 +11,17 @@ angular.module 'FingerboardApp', ['ui.bootstrap', 'music.directives', 'unsafe-po
 
 @Style =
   fingerboard:
-    string_width: 50
-    fret_height: 50
-    note_radius: 20
+    stringWdith: 50
+    fretHeight: 50
+    noteRadius: 20
 
   keyboard:
     octaves: 2
-    key_width: 25
-    key_spacing: 3
-    white_key_height: 120
-    black_key_height: 90
+    keyWidth: 25
+    keyMargin: 3
+    whiteKeyHeight: 120
+    blackKeyHeight: 90
 
   scales:
-    constellation_radius: 28
-    pitch_radius: 3
+    constellationRadius: 28
+    pitchRadius: 3

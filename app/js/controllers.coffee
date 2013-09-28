@@ -8,24 +8,24 @@ controllers.controller 'FingerboardScalesCtrl', ($scope) ->
   $scope.instruments = Instruments
   $scope.instrument = Instruments.Violin
   $scope.scale = Scales[0].modes[0]
-  $scope.scale_tonic_name = 'C'
-  $scope.scale_tonic_pitch = 0
+  $scope.scaleTonicName = 'C'
+  $scope.scaleTonicPitch = 0
   $scope.hover =
-    pitch_classes: null
-    scale_tonic_pitch: null
+    pitchClasses: null
+    scaleTonicPitch: null
 
   $scope.handleKey = (event) ->
     char = String.fromCharCode(event.charCode).toUpperCase()
     switch char
       when 'A', 'B', 'C', 'D', 'E', 'F', 'G'
-        $scope.scale_tonic_name = char
-        $scope.scale_tonic_pitch = pitch_name_to_number char
+        $scope.scaleTonicName = char
+        $scope.scaleTonicPitch = pitchNameToNumber(char)
       when '#', '+'
-        $scope.scale_tonic_pitch = (($scope.scale_tonic_pitch + 1) % 12)
-        $scope.scale_tonic_name = pitch_name $scope.scale_tonic_pitch
+        $scope.scaleTonicPitch = (($scope.scaleTonicPitch + 1) % 12)
+        $scope.scaleTonicName = getPitchName($scope.scaleTonicPitch)
       when 'b', '-'
-        $scope.scale_tonic_pitch = (($scope.scale_tonic_pitch - 1 + 12) % 12)
-        $scope.scale_tonic_name = pitch_name $scope.scale_tonic_pitch
+        $scope.scaleTonicPitch = (($scope.scaleTonicPitch - 1 + 12) % 12)
+        $scope.scaleTonicName = getPitchName($scope.scaleTonicPitch)
       # when '\015' then $scope.apply ->
       # else console.info char, event.charCode
 
@@ -33,36 +33,36 @@ controllers.controller 'FingerboardScalesCtrl', ($scope) ->
     $scope.instrument = instr if instr?
 
   $scope.setScale = (s) ->
-    $scope.scale = s.modes?[s.mode_index] or s
+    $scope.scale = s.modes?[s.modeIndex] or s
 
   $scope.bodyClassNames = ->
     hover = $scope.hover
-    scale_tonic = hover.scale_tonic_pitch ? $scope.scale_tonic_pitch
-    scale_pitch_classes = hover.scale?.pitch_classes ? $scope.scale.pitch_classes
-    show_sharps = Boolean(
-      (FlatNoteNames[pitch_to_pitch_class(scale_tonic)].length == 1) ^
-      (FlatNoteNames[pitch_to_pitch_class(scale_tonic)] == /F/)
+    scaleTonic = hover.scaleTonicPitch ? $scope.scaleTonicPitch
+    scalePitchClasses = hover.scale?.pitchClasses ? $scope.scale.pitchClasses
+    showSharps = Boolean(
+      (FlatNoteNames[pitchToPitchClass(scaleTonic)].length == 1) ^
+      (FlatNoteNames[pitchToPitchClass(scaleTonic)] == /F/)
     )
     classes = []
-    classes.push (if show_sharps then 'hide-flat-labels' else 'hide-sharp-labels')
-    classes = classes.concat ("scale-includes-relative-pitch-class-#{n}" for n in scale_pitch_classes)
-    ks = ("scale-includes-pitch-class-#{pitch_to_pitch_class(n + scale_tonic)}" for n in scale_pitch_classes)
+    classes.push (if showSharps then 'hide-flat-labels' else 'hide-sharp-labels')
+    classes = classes.concat ("scale-includes-relative-pitch-class-#{n}" for n in scalePitchClasses)
+    ks = ("scale-includes-pitch-class-#{pitchToPitchClass(n + scaleTonic)}" for n in scalePitchClasses)
     classes = classes.concat ks
     if hover.pitch?
-      classes.push "hover-note-relative-pitch-class-#{pitch_to_pitch_class(hover.pitch - scale_tonic)}"
-      classes.push "hover-note-pitch-class-#{pitch_to_pitch_class(hover.pitch)}"
+      classes.push "hover-note-relative-pitch-class-#{pitchToPitchClass(hover.pitch - scaleTonic)}"
+      classes.push "hover-note-pitch-class-#{pitchToPitchClass(hover.pitch)}"
     classes
 
-  note_grid = d3.music.note_grid $scope, Style.fingerboard, document.querySelector('#fingerboard')
-  d3.select('#scale-notes').call note_grid
-  $scope.$watch -> note_grid.update()
+  noteGrid = d3.music.noteGrid($scope, Style.fingerboard, document.querySelector('#fingerboard'))
+  d3.select('#scale-notes').call noteGrid
+  $scope.$watch -> noteGrid.update()
 
   $('#fingerings .btn').click ->
     $('#fingerings .btn').removeClass 'btn-default'
     $(@).addClass 'btn-default'
-    note_label_name = $(@).text().replace(' ', '_').toLowerCase().replace('fingers', 'fingerings')
+    noteLabelName = $(@).text().replace(' ', '_').toLowerCase().replace('fingers', 'fingerings')
     $scope.$apply ->
-      $scope.note_label = note_label_name
+      $scope.noteLabel = noteLabelName
 
   angular.element(document).bind 'touchmove', false
   angular.element(document.body).removeClass 'loading'
