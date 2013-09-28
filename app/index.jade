@@ -13,12 +13,13 @@ html(lang="en", ng-app="FingerboardApp")
     link(href="//fonts.googleapis.com/css?family=Abel|Open+Sans:400,600", rel="stylesheet")
     link(href="./css/main.css", rel="stylesheet", type="text/css")
 
+    script(src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.5.2/underscore-min.js")
     script(src="//cdnjs.cloudflare.com/ajax/libs/zepto/1.0/zepto.min.js", defer)
     script(src="//cdnjs.cloudflare.com/ajax/libs/angular.js/1.1.5/angular.min.js", defer)
     script(src="//cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.6.0/ui-bootstrap-tpls.min.js", defer)
     script(src="//cdnjs.cloudflare.com/ajax/libs/d3/3.3.3/d3.min.js", defer)
 
-    script(src="./js/fingerboard.js", defer)
+    script(src="./js/app.js", defer)
 
   body.loading(ng-controller="FingerboardScalesCtrl", ng-class="bodyClassNames()", ng-keypress="handleKey($event)")
     h1

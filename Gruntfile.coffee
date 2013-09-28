@@ -12,8 +12,17 @@ module.exports = (grunt) ->
       release: '<%= directories.release %>/*'
       target: '<%= directories.build %>/*'
 
+    coffee:
+      app:
+        files:
+          '<%= directories.build %>/js/app.js': 'app/**/*.coffee'
+        options:
+          bare: true
+          combine: true
+          sourceMap: true
+
     coffeelint:
-      app: ['**/*.coffee', '!**/node_modules/**', '!Gruntfile.coffee']
+      app: 'app/**/*.coffee'
       gruntfile: 'Gruntfile.coffee'
       options:
         max_line_length:
@@ -54,13 +63,6 @@ module.exports = (grunt) ->
         pretty: true
         pretty$release: false
 
-    livescript:
-      app:
-        files:
-          '<%= directories.build %>/js/fingerboard.js': 'app/js/**/*.ls'
-      options:
-        join: true
-
     sass:
       app:
         expand: true
@@ -76,13 +78,13 @@ module.exports = (grunt) ->
           style: 'compressed'
 
     update:
-      tasks: ['livescript', 'jade', 'sass', 'copy', 'imagemin']
+      tasks: ['coffee', 'jade', 'sass', 'copy', 'imagemin']
 
     watch:
       options:
         livereload: true
       copy:
-        files: ['app/**/*', '!app/**/*.{coffee,jade,ls,scss,png,jpg,gif}']
+        files: ['app/**/*', '!app/**/*.{coffee,jade,scss,png,jpg,gif}']
         tasks: ['copy', 'imagemin']
       gruntfile:
         files: 'Gruntfile.coffee'
@@ -94,12 +96,12 @@ module.exports = (grunt) ->
         files: ['app/**/main.scss']
         tasks: ['sass']
       scripts:
-        files: ['**/*.ls', '!**/node_modules/**']
-        tasks: ['livescript']
+        files: ['**/*.coffee', '!**/node_modules/**']
+        tasks: ['coffee:app']
 
   require('load-grunt-tasks')(grunt)
 
-  grunt.registerTask 'build', ['clean:target', 'livescript', 'jade', 'sass', 'copy', 'imagemin']
+  grunt.registerTask 'build', ['clean:target', 'coffee', 'jade', 'sass', 'copy', 'imagemin']
   grunt.registerTask 'build:release', ['contextualize:release', 'build']
   grunt.registerTask 'deploy', ['build:release', 'githubPages:target']
   grunt.registerTask 'default', ['update', 'connect', 'watch']
