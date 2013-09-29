@@ -297,7 +297,7 @@ d3.music.noteGrid = (model, attributes, referenceElement) ->
   selection = null
 
   my = (sel) ->
-    selection = sel
+    selection = my.selection = sel
     notes = _.flatten(({column, row} for column in [0 ... columns] for row in [0 ... rows]), true)
     for note in notes
       note.relativePitchClass = pitchToPitchClass note.column * 7 + note.row
@@ -332,8 +332,6 @@ d3.music.noteGrid = (model, attributes, referenceElement) ->
     noteViews.append('text')
       .attr(y: 7)
       .text (d) -> ScaleDegreeNames[d.relativePitchClass]
-
-    setTimeout (-> selection.classed 'animate', true), 1 # don't animate to the initial position
 
   my.update = ->
     updateNoteColors()
