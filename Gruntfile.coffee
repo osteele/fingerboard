@@ -7,6 +7,16 @@ module.exports = (grunt) ->
       build: '<%= directories.dev %>'
       build$release: '<%= directories.release %>'
 
+    browserify:
+      app:
+        files: { '<%= directories.build %>/js/app.js': 'app/**/*.coffee' }
+        options:
+          transform: ['coffeeify']
+          debug: true
+          debug$release: false
+          fast: true
+          alias: ['./app/js/theory.coffee:./theory']
+
     clean:
       dev: '<%= directories.dev %>'
       release: '<%= directories.release %>/*'
@@ -14,8 +24,7 @@ module.exports = (grunt) ->
 
     coffee:
       app:
-        files:
-          '<%= directories.build %>/js/app.js': 'app/**/*.coffee'
+        files: '<%= directories.build %>/js/app.js': 'app/**/*.coffee'
         options:
           bare: true
           combine: true
@@ -24,14 +33,10 @@ module.exports = (grunt) ->
     coffeelint:
       app: 'app/**/*.coffee'
       gruntfile: 'Gruntfile.coffee'
-      options:
-        max_line_length:
-          value: 120
+      options: max_line_length: value: 120
 
     connect:
-      server:
-        options:
-          base: '<%= directories.build %>'
+      server: options: base: '<%= directories.build %>'
 
     copy:
       app:
@@ -42,8 +47,7 @@ module.exports = (grunt) ->
         filter: 'isFile'
 
     'gh-pages':
-      options:
-        base: '<%= directories.release %>'
+      options: base: '<%= directories.release %>'
       src: '**/*'
 
     imagemin:
@@ -84,25 +88,17 @@ module.exports = (grunt) ->
     watch:
       options:
         livereload: true
-      copy:
-        files: ['app/**/*', '!app/**/*.{coffee,jade,scss,png,jpg,gif}']
-        tasks: ['copy', 'imagemin']
       gruntfile:
-        files: 'Gruntfile.coffee'
         tasks: ['coffeelint:gruntfile']
-      jade:
-        files: ['app/**/*.jade']
-        tasks: ['jade']
-      sass:
-        files: ['app/**/main.scss']
-        tasks: ['sass']
-      scripts:
-        files: ['**/*.coffee', '!**/node_modules/**']
-        tasks: ['coffee:app']
+      copy: {}
+      imagemin: {}
+      jade: {}
+      sass: {}
+      browserify: {}
 
   require('load-grunt-tasks')(grunt)
 
-  grunt.registerTask 'build', ['clean:target', 'coffee', 'jade', 'sass', 'copy', 'imagemin']
+  grunt.registerTask 'build', ['clean:target', 'browserify', 'jade', 'sass', 'copy', 'imagemin']
   grunt.registerTask 'build:release', ['contextualize:release', 'build']
   grunt.registerTask 'deploy', ['build:release', 'gh-pages']
-  grunt.registerTask 'default', ['update', 'connect', 'watch']
+  grunt.registerTask 'default', ['update', 'connect', 'autowatch']

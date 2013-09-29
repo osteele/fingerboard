@@ -1,3 +1,6 @@
+{FlatNoteNames, Pitches, ScaleDegreeNames, SharpNoteNames, getPitchName, pitchNameToNumber, pitchToPitchClass} =
+  require './theory'
+
 FingerPositions = 7
 
 d3.music or= {}

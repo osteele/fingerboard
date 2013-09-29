@@ -9,7 +9,7 @@ angular.module 'FingerboardApp', ['ui.bootstrap', 'music.directives', 'unsafe-po
 # Style
 #
 
-@Style =
+window.Style =
   fingerboard:
     stringWdith: 50
     fretHeight: 50

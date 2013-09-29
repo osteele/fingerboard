@@ -1,9 +1,11 @@
+{getPitchName} = require './theory'
+
 directives = angular.module('music.directives', [])
 
 directives.directive 'fingerboard', ->
   restrict: 'CE'
   link: (scope, element, attrs) ->
-    fingerboard = d3.music.fingerboard scope, Style.fingerboard
+    fingerboard = d3.music.fingerboard(scope, Style.fingerboard)
     d3.select(element[0]).call fingerboard
     scope.$watch ->
       fingerboard.attr 'noteLabel', scope.noteLabel
@@ -25,13 +27,13 @@ directives.directive 'pitchConstellation', ->
   scope: {pitchClasses: '=', pitches: '=', hover: '='}
   transclude: true
   link: (scope, element, attrs) ->
-    constellation = d3.music.pitchConstellation scope.pitches, Style.scales
+    constellation = d3.music.pitchConstellation(scope.pitches, Style.scales)
     d3.select(element[0]).call constellation
 
 directives.directive 'keyboard', ->
   restrict: 'CE'
   link: (scope, element, attrs) ->
-    keyboard = d3.music.keyboard scope, Style.keyboard
+    keyboard = d3.music.keyboard(scope, Style.keyboard)
     d3.select(element[0]).call keyboard
     scope.$watch ->
       keyboard.attr 'tonicPitch', scope.scaleTonicPitch

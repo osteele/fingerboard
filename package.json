@@ -12,7 +12,9 @@
   "author": "Oliver Steele <steele@osteele.com> ",
   "license": "MIT",
   "devDependencies": {
+    "coffeeify": "~0.5.1",
     "grunt": "~0.4.1",
+    "grunt-browserify": "~1.2.5",
     "grunt-coffeelint": "0.0.7",
     "grunt-contrib-clean": "~0.5.0",
     "grunt-contrib-coffee": "~0.7.0",
@@ -27,6 +29,7 @@
     "load-grunt-tasks": "~0.1.0",
     "marked": "~0.2.9",
     "grunt-update": "~0.2.1",
-    "grunt-contextualize": "~0.2.1"
+    "grunt-contextualize": "~0.2.1",
+    "grunt-autowatch": "~0.1.0"
   }
 }

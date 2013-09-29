@@ -1,7 +1,8 @@
+{FlatNoteNames, Instruments, Scales, getPitchName, pitchNameToNumber, pitchToPitchClass} = require './theory'
+
 controllers = angular.module('fingerboard.controllers', [])
 
 controllers.controller 'FingerboardScalesCtrl', ($scope) ->
-  window[k] = v for k, v of MusicTheory
   # $scope.aboutText = document.querySelector('#about-text').outerHTML
   $scope.aboutText = $('#about-text').html()
   $scope.scales = Scales
