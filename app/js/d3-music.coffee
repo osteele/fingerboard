@@ -145,15 +145,15 @@ d3.music.fingerboard = (model, style) ->
     string_count = instrument.stringPitches.length
     finger_positions = []
 
-    for string_number in [0 ... string_count]
-      for fret_number in [0 .. FingerPositions]
-        pitch = fingerboardPositionPitch {instrument, string_number, fret_number}
+    for string in [0 ... string_count]
+      for fret in [0 .. FingerPositions]
+        pitch = instrument.pitchAt {string, fret}
         finger_positions.push {
-          string_number
-          fret_number
+          string
+          fret
           pitch
           pitchClass: pitchToPitchClass(pitch)
-          fingering_name: String Math.ceil(fret_number / 2)
+          fingeringName: String Math.ceil(fret / 2)
         }
 
     root = selection
@@ -185,9 +185,9 @@ d3.music.fingerboard = (model, style) ->
       .enter()
         .append('g')
           .classed('finger-position', true)
-          .attr(transform: ({string_number, fret_number}) ->
-            dx = (string_number + 0.5) * style.stringWdith
-            dy = fret_number * style.fretHeight + style.noteRadius + 1
+          .attr(transform: ({string, fret}) ->
+            dx = (string + 0.5) * style.stringWdith
+            dy = fret * style.fretHeight + style.noteRadius + 1
             "translate(#{dx}, #{dy})")
           .on('click', (d) -> dispatcher.tapPitch d.pitch)
           .on('mouseover', (d) -> dispatcher.focusPitch d.pitch)
@@ -196,18 +196,18 @@ d3.music.fingerboard = (model, style) ->
     d3Notes.append('circle').attr(r: style.noteRadius)
     d3Notes.append('title')
 
-    text_y = 7
-    noteLabels = d3Notes.append('text').classed('note', true).attr(y: text_y)
+    textY = 7
+    noteLabels = d3Notes.append('text').classed('note', true).attr(y: textY)
     noteLabels.append('tspan').classed('base', true)
     noteLabels.append('tspan').classed('accidental', true).classed('flat', true).classed('flat-label', true)
     noteLabels.append('tspan').classed('accidental', true).classed('sharp', true).classed('sharp-label', true)
     d3Notes.append('text')
       .classed('fingering', true)
-      .attr(y: text_y)
-      .text((d) -> d.fingering_name)
+      .attr(y: textY)
+      .text((d) -> d.fingeringName)
     d3Notes.append('text')
       .classed('scale-degree', true)
-      .attr(y: text_y)
+      .attr(y: textY)
 
     update()
 
@@ -261,8 +261,8 @@ d3.music.fingerboard = (model, style) ->
 
     stringPitches = instrument.stringPitches
     d3Notes.each (note) ->
-      {string_number, fret_number} = note
-      note.pitch =  fingerboardPositionPitch {instrument, string_number, fret_number}
+      {string, fret} = note
+      note.pitch =  instrument.pitchAt {string, fret}
       note.pitchClass = pitchToPitchClass(note.pitch)
 
     pitchNameOptions = if scaleTonicName == /\u266D/ then {flat: true} else {sharp: true}
@@ -275,7 +275,7 @@ d3.music.fingerboard = (model, style) ->
         when 'sharp' then SharpNoteNames[pitchClass].slice(1)
 
     d3Notes.each (note) ->
-      {string_number, fret_number, pitch} = note
+      {string, fret, pitch} = note
       noteLabels = d3.select(this).select('.note')
       noteLabels.select('.base').text selectPitchNameComponent('base')
       noteLabels.select('.flat').text selectPitchNameComponent('flat')

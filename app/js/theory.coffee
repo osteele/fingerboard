@@ -14,8 +14,8 @@ pitchNameToNumber = (pitchName) ->
   pitch = SharpNoteNames.indexOf(pitchName) unless pitch >= 0
   return pitch
 
-pitchNumberToName = (pitch_number) ->
-  pitch = pitchToPitchClass(pitch_number)
+pitchNumberToName = (pitchNumber) ->
+  pitch = pitchToPitchClass(pitchNumber)
   return SharpNoteNames.indexOf(pitch) or FlatNoteNames.indexOf(pitch)
 
 pitchToPitchClass = (pitch) ->
@@ -76,6 +76,7 @@ Scales = [
     pitchClasses: [0, 2, 4, 6, 8, 10]
   }
   {
+    # 'Octatonic' is the classical name. It's the jazz 'Diminished' scale.
     name: 'Octatonic'
     pitchClasses: [0, 2, 3, 5, 6, 8, 9, 11]
   }
@@ -102,6 +103,13 @@ do ->
         parent: scale
       }
 
+class Instrument
+  constructor: ({@name, @stringPitches}) ->
+
+  pitchAt: ({string, fret}) ->
+    @stringPitches[string] + fret
+
+
 Instruments = [
   {
     name: 'Violin'
@@ -115,16 +123,12 @@ Instruments = [
     name: 'Cello'
     stringPitches: [0, 7, 14, 21]
   }
-]
+].map (attrs) -> new Instrument(attrs)
 
 do ->
   Instruments[instrument.name] = instrument for instrument in Instruments
 
-fingerboardPositionPitch = ({instrument, string_number, fret_number}) ->
-  instrument.stringPitches[string_number] + fret_number
-
 exports = {
-  fingerboardPositionPitch
   FlatNoteNames
   Instruments
   getPitchName
