@@ -39,7 +39,7 @@ Scales = [
   {
     name: 'Natural Minor'
     pitchClasses: [0, 2, 3, 5, 7, 8, 10]
-    mode_of: 'Diatonic Major'
+    parentName: 'Diatonic Major'
   }
   {
     name: 'Major Pentatonic'
@@ -49,7 +49,7 @@ Scales = [
   {
     name: 'Minor Pentatonic'
     pitchClasses: [0, 3, 5, 7, 10]
-    mode_of: 'Major Pentatonic'
+    parentName: 'Major Pentatonic'
   }
   {
     name: 'Melodic Minor'
@@ -88,17 +88,17 @@ do ->
     pitchClasses = pitchClasses.slice(i).concat pitchClasses[0 ... i]
     pitchClasses.map (pc) -> pitchToPitchClass(pc - pitchClasses[0])
   for scale in Scales
-    {name, modeNames, mode_of, pitchClasses} = scale
-    scale.base = base = Scales[mode_of]
-    modeNames or= base?.modeNames
+    {name, modeNames, parentName, pitchClasses} = scale
+    parent = scale.parent = Scales[parentName]
+    modeNames or= parent?.modeNames
     if modeNames?
       scale.modeIndex = 0
-      if base?
+      if parent?
         [scale.modeIndex] = [0 ... pitchClasses.length]
-          .filter (i) -> rotate(base.pitchClasses, i).join(',') == pitchClasses.join(',')
+          .filter (i) -> rotate(parent.pitchClasses, i).join(',') == pitchClasses.join(',')
       scale.modes = modeNames.map (name, i) -> {
         name: name.replace(/#/, '\u266F').replace(/\bb(\d)/, '\u266D$1')
-        pitchClasses: rotate(base?.pitchClasses or pitchClasses, i)
+        pitchClasses: rotate(parent?.pitchClasses or pitchClasses, i)
         parent: scale
       }
 
