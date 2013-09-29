@@ -15,7 +15,6 @@ module.exports = (grunt) ->
           debug: true
           debug$release: false
           fast: true
-          alias: ['./app/js/theory.coffee:./theory']
 
     clean:
       dev: '<%= directories.dev %>'
@@ -90,11 +89,12 @@ module.exports = (grunt) ->
         livereload: true
       gruntfile:
         tasks: ['coffeelint:gruntfile']
+      browserify:
+        files: ['app/**/*.coffee', 'node_modules/schoen/dist/**/*.{js,coffee}']
       copy: {}
       imagemin: {}
       jade: {}
       sass: {}
-      browserify: {}
 
   require('load-grunt-tasks')(grunt)
 

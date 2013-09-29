@@ -11,6 +11,10 @@
   ],
   "author": "Oliver Steele <steele@osteele.com> ",
   "license": "MIT",
+  "dependencies": {
+    "schoen": "0.0.1",
+    "underscore": "~1.5.2"
+  },
   "devDependencies": {
     "coffeeify": "~0.5.1",
     "grunt": "~0.4.1",

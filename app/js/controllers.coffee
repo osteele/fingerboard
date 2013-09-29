@@ -1,4 +1,5 @@
-{FlatNoteNames, Instruments, Scales, getPitchName, pitchNameToNumber, pitchToPitchClass} = require './theory'
+{FlatNoteNames, Scales, getPitchName, pitchNameToNumber, pitchToPitchClass} = require('schoen').theory
+Instruments = require('schoen').Instruments
 
 controllers = angular.module('fingerboard.controllers', [])
 
@@ -6,7 +7,7 @@ controllers.controller 'FingerboardScalesCtrl', ($scope, $timeout, styles) ->
   # $scope.aboutText = document.querySelector('#about-text').outerHTML
   $scope.aboutText = $('#about-text').html()
   $scope.scales = Scales
-  $scope.instruments = Instruments
+  $scope.instruments = Instruments.filter (instrument) -> not instrument.fretted
   $scope.instrument = Instruments.Violin
   $scope.scale = Scales[0].modes[0]
   $scope.scaleTonicName = 'C'

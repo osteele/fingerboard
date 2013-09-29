@@ -1,5 +1,5 @@
 {FlatNoteNames, Pitches, ScaleDegreeNames, SharpNoteNames, getPitchName, pitchNameToNumber, pitchToPitchClass} =
-  require './theory'
+  require('schoen').theory
 
 FingerPositions = 7
 

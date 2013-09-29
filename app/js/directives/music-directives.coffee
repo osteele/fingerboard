@@ -1,4 +1,4 @@
-{getPitchName} = require './theory'
+{getPitchName} = require('schoen').theory
 
 directives = angular.module('music.directives', [])
 
