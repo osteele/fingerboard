@@ -2,7 +2,7 @@
 
 controllers = angular.module('fingerboard.controllers', [])
 
-controllers.controller 'FingerboardScalesCtrl', ($scope) ->
+controllers.controller 'FingerboardScalesCtrl', ($scope, $timeout, styles) ->
   # $scope.aboutText = document.querySelector('#about-text').outerHTML
   $scope.aboutText = $('#about-text').html()
   $scope.scales = Scales
@@ -17,6 +17,9 @@ controllers.controller 'FingerboardScalesCtrl', ($scope) ->
 
   $scope.handleKey = (event) ->
     char = String.fromCharCode(event.charCode).toUpperCase()
+    adjustPitchBy = (delta) ->
+      $scope.scaleTonicPitch = (($scope.scaleTonicPitch + delta) % 12)
+      $scope.scaleTonicName = getPitchName($scope.scaleTonicPitch)
     switch char
       when 'A', 'B', 'C', 'D', 'E', 'F', 'G'
         $scope.scaleTonicName = char
@@ -54,9 +57,18 @@ controllers.controller 'FingerboardScalesCtrl', ($scope) ->
       classes.push "hover-note-pitch-class-#{pitchToPitchClass(hover.pitch)}"
     classes
 
-  noteGrid = d3.music.noteGrid($scope, Style.fingerboard, document.querySelector('#fingerboard'))
-  d3.select('#scale-notes').call noteGrid
-  $scope.$watch -> noteGrid.update()
+  do ->
+    noteGrid = d3.music.noteGrid($scope, styles.fingerboard, document.querySelector('#fingerboard'))
+    noteGridElement = d3.select('#scale-notes')
+    noteGridElement.call noteGrid
+    # `update` forces a layout; is very slow
+    $timeout(->
+        noteGrid.update()
+        noteGridElement.classed 'initializing', false
+        $scope.$watch -> noteGrid.update()
+        # don't animate to the initial position
+        $timeout (-> noteGridElement.classed 'animate', true), 1
+      , 1000)
 
   $('#fingerings .btn').click ->
     $('#fingerings .btn').removeClass 'btn-default'

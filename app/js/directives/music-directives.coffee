@@ -2,10 +2,10 @@
 
 directives = angular.module('music.directives', [])
 
-directives.directive 'fingerboard', ->
+directives.directive 'fingerboard', (styles) ->
   restrict: 'CE'
   link: (scope, element, attrs) ->
-    fingerboard = d3.music.fingerboard(scope, Style.fingerboard)
+    fingerboard = d3.music.fingerboard(scope, styles.fingerboard)
     d3.select(element[0]).call fingerboard
     scope.$watch ->
       fingerboard.attr 'noteLabel', scope.noteLabel
@@ -21,19 +21,19 @@ directives.directive 'fingerboard', ->
     fingerboard.on 'blurPitch', ->
       scope.$apply -> scope.hover.pitch = null
 
-directives.directive 'pitchConstellation', ->
+directives.directive 'pitchConstellation', (styles) ->
   restrict: 'CE'
   replace: true
   scope: {pitchClasses: '=', pitches: '=', hover: '='}
   transclude: true
   link: (scope, element, attrs) ->
-    constellation = d3.music.pitchConstellation(scope.pitches, Style.scales)
+    constellation = d3.music.pitchConstellation(scope.pitches, styles.scales)
     d3.select(element[0]).call constellation
 
-directives.directive 'keyboard', ->
+directives.directive 'keyboard', (styles) ->
   restrict: 'CE'
   link: (scope, element, attrs) ->
-    keyboard = d3.music.keyboard(scope, Style.keyboard)
+    keyboard = d3.music.keyboard(scope, styles.keyboard)
     d3.select(element[0]).call keyboard
     scope.$watch ->
       keyboard.attr 'tonicPitch', scope.scaleTonicPitch

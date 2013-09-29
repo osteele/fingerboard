@@ -128,15 +128,14 @@ Instruments = [
 do ->
   Instruments[instrument.name] = instrument for instrument in Instruments
 
-exports = {
+module.exports = {
   FlatNoteNames
   Instruments
-  getPitchName
-  pitchToPitchClass
   Pitches
   ScaleDegreeNames
   Scales
   SharpNoteNames
+  getPitchName
+  normalizePitchClass: pitchToPitchClass
+  pitchToPitchClass
 }
-
-if module?.exports? then module.exports = exports else @MusicTheory = exports

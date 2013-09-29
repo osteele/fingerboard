@@ -2,14 +2,14 @@
 # App
 #
 
-angular.module 'FingerboardApp', ['ui.bootstrap', 'music.directives', 'unsafe-popover', 'fingerboard.controllers']
+app = angular.module 'FingerboardApp', ['ui.bootstrap', 'music.directives', 'unsafe-popover', 'fingerboard.controllers']
 
 
 #
-# Style
+# Styles
 #
 
-window.Style =
+Styles =
   fingerboard:
     stringWdith: 50
     fretHeight: 50
@@ -25,3 +25,5 @@ window.Style =
   scales:
     constellationRadius: 28
     pitchRadius: 3
+
+app.constant 'styles', Styles
