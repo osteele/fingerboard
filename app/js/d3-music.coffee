@@ -5,8 +5,8 @@ FingerPositions = 7
 
 d3.music or= {}
 
-d3.music.keyboard = (model, style) ->
-  octaves = style.octaves
+d3.music.keyboard = (model, attributes) ->
+  octaves = attributes.octaves
   strokeWidth = 1
   attrs =
     scale: model.scale
@@ -14,21 +14,21 @@ d3.music.keyboard = (model, style) ->
   dispatcher = d3.dispatch('focusPitch', 'blurPitch', 'tapPitch')
   selection = null
 
-  my = (_selection) ->
-    selection = _selection
+  my = (sel) ->
+    selection = sel
     keys = [0 ... 12 * octaves].map (pitch) ->
       pitchClass = pitchToPitchClass(pitch)
       isBlackKey = FlatNoteNames[pitchClass].length > 1
       pitchClassName = getPitchName(pitch, flat: true)
-      height = (if isBlackKey then style.blackKeyHeight else style.whiteKeyHeight)
-      return {pitch, pitchClass, pitchClassName, isBlackKey, attrs: {width: style.keyWidth, height, y: 0}}
+      height = (if isBlackKey then attributes.blackKeyHeight else attributes.whiteKeyHeight)
+      return {pitch, pitchClass, pitchClassName, isBlackKey, attrs: {width: attributes.keyWidth, height, y: 0}}
 
     x = strokeWidth
     for {attrs, isBlackKey} in keys
       {width} = attrs
       attrs.x = x
       attrs.x -= width / 2 if isBlackKey
-      x += width + style.keyMargin unless isBlackKey
+      x += width + attributes.keyMargin unless isBlackKey
 
     # order the black keys on top of (following) the white keys
     keys.sort (a, b) -> a.isBlackKey - b.isBlackKey
@@ -36,10 +36,10 @@ d3.music.keyboard = (model, style) ->
     whiteKeyCount = octaves * 7
     root = selection.append('svg')
       .attr
-        width: whiteKeyCount * (style.keyWidth + style.keyMargin) - style.keyMargin + 2 * strokeWidth
-        height: style.whiteKeyHeight + 1
+        width: whiteKeyCount * (attributes.keyWidth + attributes.keyMargin) - attributes.keyMargin + 2 * strokeWidth
+        height: attributes.whiteKeyHeight + 1
 
-    key_views = root.selectAll('.piano-key')
+    keyViews = root.selectAll('.piano-key')
       .data(keys).enter()
         .append('g')
           .attr('class', (d) -> "pitch-#{d.pitch} pitch-class-#{d.pitchClass}")
@@ -50,28 +50,28 @@ d3.music.keyboard = (model, style) ->
           .on('mouseover', (d) -> dispatcher.focusPitch d.pitch)
           .on('mouseout', (d) -> dispatcher.blurPitch d.pitch)
 
-    key_views.append('rect')
+    keyViews.append('rect')
       .attr
         x: ({attrs}) -> attrs.x
         y: ({attrs}) -> attrs.y
         width: ({attrs}) -> attrs.width
         height: ({attrs}) -> attrs.height
 
-    key_views.append('text')
+    keyViews.append('text')
       .classed('flat-label', true)
       .attr
         x: ({attrs: {x, width}}) -> x + width / 2
         y: ({attrs: {y, height}}) -> y + height - 6
       .text (d) -> FlatNoteNames[d.pitchClass]
 
-    key_views.append('text')
+    keyViews.append('text')
       .classed('sharp-label', true)
       .attr
         x: ({attrs: {x, width}}) -> x + width / 2
         y: ({attrs: {y, height}}) -> y + height - 6
       .text (d) -> SharpNoteNames[d.pitchClass]
 
-    key_views.append('title').text (d) -> "Click to set the scale tonic to #{d.pitchClassName}."
+    keyViews.append('title').text (d) -> "Click to set the scale tonic to #{d.pitchClassName}."
 
     update()
 
@@ -93,16 +93,16 @@ d3.music.keyboard = (model, style) ->
   return my
 
 
-d3.music.pitchConstellation = (pitchClasses, style) ->
+d3.music.pitchConstellation = (pitchClasses, attributes) ->
   (selection) ->
-    r = style.constellationRadius
-    noteRadius = style.pitchRadius
-    pc_width = 2 * (r + noteRadius + 1)
+    r = attributes.constellationRadius
+    noteRadius = attributes.pitchRadius
+    pcWidth = 2 * (r + noteRadius + 1)
 
     root =(selection.append 'svg')
-      .attr(width: pc_width, height: pc_width)
+      .attr(width: pcWidth, height: pcWidth)
       .append('g')
-        .attr('transform', "translate(#{pc_width / 2}, #{pc_width / 2})")
+        .attr('transform', "translate(#{pcWidth / 2}, #{pcWidth / 2})")
 
     endpoints = Pitches.map (pitchClass) ->
       a = (pitchClass - 3) * 2 * Math.PI / 12
@@ -132,8 +132,8 @@ d3.music.pitchConstellation = (pitchClasses, style) ->
           .attr('r', noteRadius)
 
 
-d3.music.fingerboard = (model, style) ->
-  label_sets = ['notes', 'fingerings', 'scale-degrees']
+d3.music.fingerboard = (model, attributes) ->
+  labelSets = ['notes', 'fingerings', 'scale-degrees']
   dispatcher = d3.dispatch('focusPitch', 'blurPitch', 'tapPitch')
   attrs =
     instrument: model.instrument
@@ -145,13 +145,13 @@ d3.music.fingerboard = (model, style) ->
 
   my = (selection) ->
     instrument = attrs.instrument
-    string_count = instrument.stringPitches.length
-    finger_positions = []
+    strings = instrument.stringPitches.length
+    fingerPositions = []
 
-    for string in [0 ... string_count]
+    for string in [0 ... strings]
       for fret in [0 .. FingerPositions]
         pitch = instrument.pitchAt {string, fret}
-        finger_positions.push {
+        fingerPositions.push {
           string
           fret
           pitch
@@ -161,42 +161,42 @@ d3.music.fingerboard = (model, style) ->
 
     root = selection
       .append('svg')
-        .attr(width: string_count * style.stringWdith)
-        .attr(height: (1 + FingerPositions) * style.fretHeight)
+        .attr(width: strings * attributes.stringWdith)
+        .attr(height: (1 + FingerPositions) * attributes.fretHeight)
 
     # nut
     root.append('line')
       .classed('nut', true)
       .attr
-        x2: string_count * style.stringWdith
-        transform: "translate(0, #{style.fretHeight - 5})"
+        x2: strings * attributes.stringWdith
+        transform: "translate(0, #{attributes.fretHeight - 5})"
 
     # strings
     root.selectAll('.string')
-      .data([0 ... string_count])
+      .data([0 ... strings])
       .enter()
         .append('line')
           .classed('string', true)
           .attr
-            y1: style.fretHeight * 0.5
-            y2: (1 + FingerPositions) * style.fretHeight
-            transform: (d) -> "translate(#{(d + 0.5) * style.stringWdith}, 0)"
+            y1: attributes.fretHeight * 0.5
+            y2: (1 + FingerPositions) * attributes.fretHeight
+            transform: (d) -> "translate(#{(d + 0.5) * attributes.stringWdith}, 0)"
 
     # finger positions
     d3Notes = root.selectAll('.finger-position')
-      .data(finger_positions)
+      .data(fingerPositions)
       .enter()
         .append('g')
           .classed('finger-position', true)
           .attr(transform: ({string, fret}) ->
-            dx = (string + 0.5) * style.stringWdith
-            dy = fret * style.fretHeight + style.noteRadius + 1
+            dx = (string + 0.5) * attributes.stringWdith
+            dy = fret * attributes.fretHeight + attributes.noteRadius + 1
             "translate(#{dx}, #{dy})")
           .on('click', (d) -> dispatcher.tapPitch d.pitch)
           .on('mouseover', (d) -> dispatcher.focusPitch d.pitch)
           .on('mouseout', (d) -> dispatcher.blurPitch d.pitch)
 
-    d3Notes.append('circle').attr(r: style.noteRadius)
+    d3Notes.append('circle').attr(r: attributes.noteRadius)
     d3Notes.append('title')
 
     textY = 7
@@ -229,14 +229,14 @@ d3.music.fingerboard = (model, style) ->
       cached.scale == attrs.scale and
       cached.tonic == attrs.tonic
 
-    update_instrument()
+    updateInstrument()
 
     scale = cached.scale = attrs.scale
     tonicPitch = cached.tonic = attrs.tonicPitch
-    scale_relative_pitch_classes = scale.pitchClasses
+    scaleRelativePitchClasses = scale.pitchClasses
 
-    attrs.noteLabel or= label_sets[0]
-    for k in label_sets
+    attrs.noteLabel or= labelSets[0]
+    for k in labelSets
       visible = k == attrs.noteLabel.replace(/_/g, '-')
       labels = d3.select('#fingerboard').selectAll('.' + k.replace(/s$/, ''))
       labels.attr('visibility', if visible then 'inherit' else 'hidden')
@@ -248,8 +248,8 @@ d3.music.fingerboard = (model, style) ->
     d3Notes
       .attr('class', (d) -> "pitch-class-#{d.pitchClass} relative-pitch-class-#{d.relativePitchClass}")
       .classed('finger-position', true)
-      .classed('scale', (d) -> d.relativePitchClass in scale_relative_pitch_classes)
-      .classed('chromatic', (d) -> d.relativePitchClass not in scale_relative_pitch_classes)
+      .classed('scale', (d) -> d.relativePitchClass in scaleRelativePitchClasses)
+      .classed('chromatic', (d) -> d.relativePitchClass not in scaleRelativePitchClasses)
       .select('.scale-degree')
         .text("")
         .text((d) -> ScaleDegreeNames[d.relativePitchClass])
@@ -257,7 +257,7 @@ d3.music.fingerboard = (model, style) ->
     d3Notes.each ({pitch}) ->
       noteLabels = d3.select this
 
-  update_instrument = ->
+  updateInstrument = ->
     return if cached.instrument == attrs.instrument
     instrument = cached.instrument = attrs.instrument
     scaleTonicName = attrs.scaleTonicName
@@ -290,30 +290,30 @@ d3.music.fingerboard = (model, style) ->
   return my
 
 
-d3.music.noteGrid = (model, style, referenceElement) ->
-  column_count = style.columns ? 12 * 5
-  row_count = style.rows ? 12
-  cached_offset = null
+d3.music.noteGrid = (model, attributes, referenceElement) ->
+  columns = attributes.columns ? 12 * 5
+  rows = attributes.rows ? 12
+  cachedOffset = null
   selection = null
 
-  my = (_selection) ->
-    selection = _selection
-    notes = _.flatten(({column, row} for column in [0 ... column_count] for row in [0 ... row_count]), true)
+  my = (sel) ->
+    selection = sel
+    notes = _.flatten(({column, row} for column in [0 ... columns] for row in [0 ... rows]), true)
     for note in notes
       note.relativePitchClass = pitchToPitchClass note.column * 7 + note.row
-    degree_groups = d3.nest()
+    degreeGroups = d3.nest()
       .key((d) -> d.relativePitchClass)
       .entries(notes)
-    degree.relativePitchClass = Number(degree.key) for degree in degree_groups
+    degree.relativePitchClass = Number(degree.key) for degree in degreeGroups
 
     root = selection
       .append('svg')
         .attr
-          width: column_count * style.stringWdith
-          height: row_count * style.fretHeight
+          width: columns * attributes.stringWdith
+          height: rows * attributes.fretHeight
 
-    note_views = root.selectAll('.scale-degree')
-      .data(degree_groups)
+    noteViews = root.selectAll('.scale-degree')
+      .data(degreeGroups)
       .enter()
         .append('g')
           .classed('scale-degree', true)
@@ -323,38 +323,38 @@ d3.music.noteGrid = (model, style, referenceElement) ->
             .append('g')
               .classed('note', true)
               .attr 'transform', ({column, row}) ->
-                x = (column + 0.5) * style.stringWdith
-                y = row * style.fretHeight + style.noteRadius
+                x = (column + 0.5) * attributes.stringWdith
+                y = row * attributes.fretHeight + attributes.noteRadius
                 "translate(#{x}, #{y})"
 
-    note_views.append('circle')
-      .attr(r: style.noteRadius)
-    note_views.append('text')
+    noteViews.append('circle')
+      .attr(r: attributes.noteRadius)
+    noteViews.append('text')
       .attr(y: 7)
       .text (d) -> ScaleDegreeNames[d.relativePitchClass]
 
     setTimeout (-> selection.classed 'animate', true), 1 # don't animate to the initial position
 
   my.update = ->
-    update_note_colors()
-    update_position()
+    updateNoteColors()
+    updatePosition()
 
-  update_note_colors = ->
-    scale_pitch_classes = model.scale.pitchClasses
+  updateNoteColors = ->
+    scalePitchClasses = model.scale.pitchClasses
     selection.selectAll('.scale-degree')
-      .classed('chromatic', ({relativePitchClass}) -> relativePitchClass not in scale_pitch_classes)
+      .classed('chromatic', ({relativePitchClass}) -> relativePitchClass not in scalePitchClasses)
       .classed('tonic', ({relativePitchClass}) ->
-        relativePitchClass in scale_pitch_classes and relativePitchClass == 0)
+        relativePitchClass in scalePitchClasses and relativePitchClass == 0)
       .classed 'fifth', ({relativePitchClass}) ->
-        relativePitchClass in scale_pitch_classes and relativePitchClass == 7
+        relativePitchClass in scalePitchClasses and relativePitchClass == 7
 
-  update_position = ->
-    scale_tonic = model.scaleTonicPitch
-    bass_pitch = model.instrument.stringPitches[0]
-    offset = style.stringWdith * pitchToPitchClass((scale_tonic - bass_pitch) * 5)
+  updatePosition = ->
+    scaleTonic = model.scaleTonicPitch
+    bassPitch = model.instrument.stringPitches[0]
+    offset = attributes.stringWdith * pitchToPitchClass((scaleTonic - bassPitch) * 5)
 
-    return if offset == cached_offset # profiled
-    cached_offset = offset
+    return if offset == cachedOffset # profiled
+    cachedOffset = offset
     pos = $(referenceElement).offset()
 
     # FIXME why the fudge factor?
