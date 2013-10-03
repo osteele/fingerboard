@@ -1,5 +1,6 @@
-{FlatNoteNames, Pitches, ScaleDegreeNames, SharpNoteNames, getPitchName, pitchNameToNumber, pitchToPitchClass} =
-  require('schoen').theory
+{Interval, Pitch} = require('schoen')
+{FlatNoteNames, SharpNoteNames, getPitchName, normalizePitchClass, pitchToPitchClass} = require('schoen').pitches
+{ScaleDegreeNames} = require('schoen').scales
 
 FingerPositions = 7
 
@@ -10,24 +11,24 @@ d3.music.keyboard = (model, attributes) ->
   strokeWidth = 1
   attrs =
     scale: model.scale
-    tonicPitch: model.tonicPitch
+    tonic: model.tonic
   dispatcher = d3.dispatch('focusPitch', 'blurPitch', 'tapPitch')
   selection = null
 
   my = (sel) ->
     selection = sel
-    keys = [0 ... 12 * octaves].map (pitch) ->
-      pitchClass = pitchToPitchClass(pitch)
-      isBlackKey = FlatNoteNames[pitchClass].length > 1
-      pitchClassName = getPitchName(pitch, flat: true)
+    keys = [0 ... 12 * octaves].map (pitchNumber) ->
+      pitchClassNumber = pitchToPitchClass(pitchNumber)
+      pitchClassName = getPitchName(pitchClassNumber, flat: true)
+      isBlackKey = FlatNoteNames[pitchClassNumber].length > 1
       height = (if isBlackKey then attributes.blackKeyHeight else attributes.whiteKeyHeight)
-      return {pitch, pitchClass, pitchClassName, isBlackKey, attrs: {width: attributes.keyWidth, height, y: 0}}
+      return {pitchNumber, pitchClassNumber, pitchClassName, isBlackKey, attrs: {width: attributes.keyWidth, height, y: 0}}
 
     x = strokeWidth
-    for {attrs, isBlackKey} in keys
-      {width} = attrs
-      attrs.x = x
-      attrs.x -= width / 2 if isBlackKey
+    for {attrs: keyAttrs, isBlackKey} in keys
+      {width} = keyAttrs
+      keyAttrs.x = x
+      keyAttrs.x -= width / 2 if isBlackKey
       x += width + attributes.keyMargin unless isBlackKey
 
     # order the black keys on top of (following) the white keys
@@ -42,13 +43,13 @@ d3.music.keyboard = (model, attributes) ->
     keyViews = root.selectAll('.piano-key')
       .data(keys).enter()
         .append('g')
-          .attr('class', (d) -> "pitch-#{d.pitch} pitch-class-#{d.pitchClass}")
+          .attr('class', (d) -> "pitch-#{d.pitchNumber} pitch-class-#{d.pitchClassNumber}")
           .classed('piano-key', true)
           .classed('black-key', (d) -> (d.isBlackKey))
           .classed('white-key', (d) -> (not d.isBlackKey))
-          .on('click', (d) -> dispatcher.tapPitch d.pitch)
-          .on('mouseover', (d) -> dispatcher.focusPitch d.pitch)
-          .on('mouseout', (d) -> dispatcher.blurPitch d.pitch)
+          .on('click', (d) -> dispatcher.tapPitch Pitch.fromMidiNumber(d.pitchNumber))
+          .on('mouseover', (d) -> dispatcher.focusPitch Pitch.fromMidiNumber(d.pitchNumber))
+          .on('mouseout', (d) -> dispatcher.blurPitch Pitch.fromMidiNumber(d.pitchNumber))
 
     keyViews.append('rect')
       .attr
@@ -62,14 +63,14 @@ d3.music.keyboard = (model, attributes) ->
       .attr
         x: ({attrs: {x, width}}) -> x + width / 2
         y: ({attrs: {y, height}}) -> y + height - 6
-      .text (d) -> FlatNoteNames[d.pitchClass]
+      .text (d) -> FlatNoteNames[d.pitchClassNumber]
 
     keyViews.append('text')
       .classed('sharp-label', true)
       .attr
         x: ({attrs: {x, width}}) -> x + width / 2
         y: ({attrs: {y, height}}) -> y + height - 6
-      .text (d) -> SharpNoteNames[d.pitchClass]
+      .text (d) -> SharpNoteNames[d.pitchClassNumber]
 
     keyViews.append('title').text (d) -> "Click to set the scale tonic to #{d.pitchClassName}."
 
@@ -77,18 +78,26 @@ d3.music.keyboard = (model, attributes) ->
 
   my.on = (args...) -> dispatcher.on args...
 
+  pitchClassIntervalIs = (semitones) -> (d) ->
+    Interval.between(attrs.tonic, Pitch.fromMidiNumber(d.pitchNumber)).semitones == semitones
+
+  scaleContainsPitchNumber = (pitchNumber) ->
+    scaleSemitones = (interval.semitones for interval in attrs.scale.intervals)
+    normalizePitchClass(Interval.between(attrs.tonic, Pitch.fromMidiNumber(pitchNumber)).semitones) in scaleSemitones
+
+  update = ->
+    selection.selectAll('.piano-key')
+      .classed('root', pitchClassIntervalIs(0))
+      .classed('fifth', pitchClassIntervalIs(7))
+      .classed('scale-note', (d) -> scaleContainsPitchNumber(d.pitchNumber))
+
   my.attr = (key, value) ->
-    return attrs[key] if arguments.length < 2
+    throw new Error("Unknown key #{key}") unless key of attrs
+    return attrs[key] unless arguments.length > 1
     unless attrs[key] == value
       attrs[key] = value
       update()
     return my
-
-  update = ->
-    selection.selectAll('.piano-key')
-      .classed('root', (d) -> pitchToPitchClass(d.pitch - model.scaleTonicPitch) == 0)
-      .classed('scale-note', (d) -> pitchToPitchClass(d.pitch - model.scaleTonicPitch) in model.scale.pitchClasses)
-      .classed('fifth', (d) -> pitchToPitchClass(d.pitch - model.scaleTonicPitch) == 7)
 
   return my
 
@@ -99,12 +108,12 @@ d3.music.pitchConstellation = (pitchClasses, attributes) ->
     noteRadius = attributes.pitchRadius
     pcWidth = 2 * (r + noteRadius + 1)
 
-    root =(selection.append 'svg')
+    root = selection.append('svg')
       .attr(width: pcWidth, height: pcWidth)
       .append('g')
         .attr('transform', "translate(#{pcWidth / 2}, #{pcWidth / 2})")
 
-    endpoints = Pitches.map (pitchClass) ->
+    endpoints = [0 ... 12].map (pitchClass) ->
       a = (pitchClass - 3) * 2 * Math.PI / 12
       x = Math.cos(a) * r
       y = Math.sin(a) * r
@@ -139,7 +148,7 @@ d3.music.fingerboard = (model, attributes) ->
     instrument: model.instrument
     noteLabel: null
     scale: model.scale
-    tonicPitch: model.scaleTonicPitch
+    tonic: model.tonic
   cached = {}
   d3Notes = null
 
@@ -155,8 +164,8 @@ d3.music.fingerboard = (model, attributes) ->
           string
           fret
           pitch
-          pitchClass: pitchToPitchClass(pitch)
-          fingeringName: String Math.ceil(fret / 2)
+          pitchClass: pitch.toPitchClass()
+          fingeringName: String(Math.ceil(fret / 2))
         }
 
     root = selection
@@ -232,7 +241,7 @@ d3.music.fingerboard = (model, attributes) ->
     updateInstrument()
 
     scale = cached.scale = attrs.scale
-    tonicPitch = cached.tonic = attrs.tonicPitch
+    tonic = cached.tonic = attrs.tonic
     scaleRelativePitchClasses = scale.pitchClasses
 
     attrs.noteLabel or= labelSets[0]
@@ -243,16 +252,17 @@ d3.music.fingerboard = (model, attributes) ->
 
     d3Notes.each (note) ->
       {pitch} = note
-      note.relativePitchClass = pitchToPitchClass(pitch - tonicPitch)
+      note.interval = Interval.between(tonic, pitch)
 
+    scaleSemitones = (interval.semitones for interval in attrs.scale.intervals)
     d3Notes
-      .attr('class', (d) -> "pitch-class-#{d.pitchClass} relative-pitch-class-#{d.relativePitchClass}")
+      .attr('class', (d) -> "pitch-class-#{d.pitchClass.semitones} relative-pitch-class-#{d.interval.semitones}")
       .classed('finger-position', true)
-      .classed('scale', (d) -> d.relativePitchClass in scaleRelativePitchClasses)
-      .classed('chromatic', (d) -> d.relativePitchClass not in scaleRelativePitchClasses)
+      .classed('scale', (d) -> d.interval.semitones in scaleSemitones)
+      .classed('chromatic', (d) -> d.interval.semitones not in scaleSemitones)
       .select('.scale-degree')
         .text("")
-        .text((d) -> ScaleDegreeNames[d.relativePitchClass])
+        .text((d) -> ScaleDegreeNames[d.interval])
 
     d3Notes.each ({pitch}) ->
       noteLabels = d3.select this
@@ -266,16 +276,16 @@ d3.music.fingerboard = (model, attributes) ->
     d3Notes.each (note) ->
       {string, fret} = note
       note.pitch =  instrument.pitchAt {string, fret}
-      note.pitchClass = pitchToPitchClass(note.pitch)
+      note.pitchClassSemitones = note.pitch.toPitchClass().semitones
 
     pitchNameOptions = if scaleTonicName == /\u266D/ then {flat: true} else {sharp: true}
-    selectPitchNameComponent = (component) -> ({pitch, pitchClass}) ->
-      name = getPitchName(pitch, pitchNameOptions)
+    selectPitchNameComponent = (component) -> ({pitch, pitchClassSemitones}) ->
+      name = getPitchName(pitch.midiNumber, pitchNameOptions)
       switch component
         when 'base' then name.replace(/[^\w]/, '')
         when 'accidental' then name.replace(/[\w]/, '')
-        when 'flat' then FlatNoteNames[pitchClass].slice(1)
-        when 'sharp' then SharpNoteNames[pitchClass].slice(1)
+        when 'flat' then FlatNoteNames[pitchClassSemitones].slice(1)
+        when 'sharp' then SharpNoteNames[pitchClassSemitones].slice(1)
 
     d3Notes.each (note) ->
       {string, fret, pitch} = note
@@ -285,7 +295,7 @@ d3.music.fingerboard = (model, attributes) ->
       noteLabels.select('.sharp').text selectPitchNameComponent('sharp')
 
     d3Notes.select('title')
-      .text (d) -> "Click to set the scale tonic to #{FlatNoteNames[d.pitchClass]}."
+      .text (d) -> "Click to set the scale tonic to #{FlatNoteNames[d.pitchClassSemitones]}."
 
   return my
 
@@ -347,7 +357,7 @@ d3.music.noteGrid = (model, attributes, referenceElement) ->
         relativePitchClass in scalePitchClasses and relativePitchClass == 7
 
   updatePosition = ->
-    scaleTonic = model.scaleTonicPitch
+    scaleTonic = model.tonic
     bassPitch = model.instrument.stringPitches[0]
     offset = attributes.stringWdith * pitchToPitchClass((scaleTonic - bassPitch) * 5)
 

@@ -233,6 +233,14 @@ svg text {
     fill: darken($root-color, 45%) !important;
   }
 
+  &.scale-note rect {
+    fill: lighten(green, 65%);
+  }
+
+  &.black-key.scale-note rect {
+    fill: darken(green, 10%);
+  }
+
   &.fifth.scale-note rect {
     fill: $fifth-color !important;
   }

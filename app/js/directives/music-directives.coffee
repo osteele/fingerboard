@@ -1,5 +1,3 @@
-{getPitchName} = require('schoen').theory
-
 directives = angular.module('music.directives', [])
 
 directives.directive 'fingerboard', (styles) ->
@@ -11,11 +9,10 @@ directives.directive 'fingerboard', (styles) ->
       fingerboard.attr 'noteLabel', scope.noteLabel
       fingerboard.attr 'scale', scope.scale
       fingerboard.attr 'instrument', scope.instrument
-      fingerboard.attr 'tonicPitch', scope.scaleTonicPitch
+      fingerboard.attr 'tonic', scope.tonic
     fingerboard.on 'tapPitch', (pitch) ->
       scope.$apply ->
-        scope.scaleTonicName = getPitchName(pitch)
-        scope.scaleTonicPitch = pitch
+        scope.scaleTonic = pitch
     fingerboard.on 'focusPitch', (pitch) ->
       scope.$apply -> scope.hover.pitch = pitch
     fingerboard.on 'blurPitch', ->
@@ -36,17 +33,16 @@ directives.directive 'keyboard', (styles) ->
     keyboard = d3.music.keyboard(scope, styles.keyboard)
     d3.select(element[0]).call keyboard
     scope.$watch ->
-      keyboard.attr 'tonicPitch', scope.scaleTonicPitch
       keyboard.attr 'scale', scope.scale
+      keyboard.attr 'tonic', scope.tonic
     keyboard.on 'tapPitch', (pitch) ->
       scope.$apply ->
-        scope.scaleTonicName = getPitchName(pitch)
-        scope.scaleTonicPitch = pitch
+        scope.tonic = pitch
     keyboard.on 'focusPitch', (pitch) ->
       scope.$apply ->
         scope.hover.pitch = pitch
-        scope.hover.scaleTonicPitch = pitch
+        scope.hover.tonic = pitch
     keyboard.on 'blurPitch', ->
       scope.$apply ->
         scope.hover.pitch = null
-        scope.hover.scaleTonicPitch = null
+        scope.hover.tonic = null

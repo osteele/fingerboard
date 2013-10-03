@@ -1,5 +1,5 @@
-{FlatNoteNames, Scales, getPitchName, pitchNameToNumber, pitchToPitchClass} = require('schoen').theory
-Instruments = require('schoen').Instruments
+{SharpNoteNames, getPitchName, pitchNameToNumber, pitchToPitchClass} = require('schoen').pitches
+{Instruments, Pitch, Scales} = require('schoen')
 
 controllers = angular.module('fingerboard.controllers', [])
 
@@ -10,52 +10,47 @@ controllers.controller 'FingerboardScalesCtrl', ($scope, $timeout, styles) ->
   $scope.instruments = Instruments.filter (instrument) -> not instrument.fretted
   $scope.instrument = Instruments.Violin
   $scope.scale = Scales[0].modes[0]
-  $scope.scaleTonicName = 'C'
-  $scope.scaleTonicPitch = 0
+  $scope.tonic = Pitch.fromString('C')
   $scope.hover =
     pitchClasses: null
-    scaleTonicPitch: null
+    tonic: null
 
   $scope.handleKey = (event) ->
     char = String.fromCharCode(event.charCode).toUpperCase()
     adjustPitchBy = (delta) ->
-      $scope.scaleTonicPitch = (($scope.scaleTonicPitch + delta) % 12)
-      $scope.scaleTonicName = getPitchName($scope.scaleTonicPitch)
+      $scope.tonic = Pitch.fromMidiNumber(($scope.tonic.midiNumber + delta + 12) % 12)
     switch char
       when 'A', 'B', 'C', 'D', 'E', 'F', 'G'
-        $scope.scaleTonicName = char
-        $scope.scaleTonicPitch = pitchNameToNumber(char)
+        $scope.tonic = Pitch.fromString(char)
       when '#', '+'
-        $scope.scaleTonicPitch = (($scope.scaleTonicPitch + 1) % 12)
-        $scope.scaleTonicName = getPitchName($scope.scaleTonicPitch)
+        adjustPitchBy 1
       when 'b', '-'
-        $scope.scaleTonicPitch = (($scope.scaleTonicPitch - 1 + 12) % 12)
-        $scope.scaleTonicName = getPitchName($scope.scaleTonicPitch)
+        adjustPitchBy -1
       # when '\015' then $scope.apply ->
       # else console.info char, event.charCode
 
   $scope.setInstrument = (instr) ->
     $scope.instrument = instr if instr?
 
-  $scope.setScale = (s) ->
-    $scope.scale = s.modes?[s.modeIndex] or s
+  $scope.selectScale = (scale) ->
+    $scope.scale = scale.modes?[scale.modeIndex] or scale
 
   $scope.bodyClassNames = ->
     hover = $scope.hover
-    scaleTonic = hover.scaleTonicPitch ? $scope.scaleTonicPitch
+    tonic = (hover.tonic ? $scope.tonic).toPitchClass()
     scalePitchClasses = hover.scale?.pitchClasses ? $scope.scale.pitchClasses
     showSharps = Boolean(
-      (FlatNoteNames[pitchToPitchClass(scaleTonic)].length == 1) ^
-      (FlatNoteNames[pitchToPitchClass(scaleTonic)] == /F/)
+      (SharpNoteNames[tonic.toPitchClass().semitones].length == 1) ^
+      Boolean(SharpNoteNames[tonic.toPitchClass().semitones].match(/F/))
     )
     classes = []
     classes.push (if showSharps then 'hide-flat-labels' else 'hide-sharp-labels')
-    classes = classes.concat ("scale-includes-relative-pitch-class-#{n}" for n in scalePitchClasses)
-    ks = ("scale-includes-pitch-class-#{pitchToPitchClass(n + scaleTonic)}" for n in scalePitchClasses)
+    classes = classes.concat ("scale-includes-relative-pitch-class-#{semitones}" for {semitones} in scalePitchClasses)
+    ks = ("scale-includes-pitch-class-#{pitchToPitchClass(semitones + tonic)}" for {semitones} in scalePitchClasses)
     classes = classes.concat ks
     if hover.pitch?
-      classes.push "hover-note-relative-pitch-class-#{pitchToPitchClass(hover.pitch - scaleTonic)}"
-      classes.push "hover-note-pitch-class-#{pitchToPitchClass(hover.pitch)}"
+      classes.push "hover-note-relative-pitch-class-#{pitchToPitchClass(hover.pitch.midiNumber - tonic.semitones)}"
+      classes.push "hover-note-pitch-class-#{pitchToPitchClass(hover.pitch.toPitchClass().semitones)}"
     classes
 
   do ->
