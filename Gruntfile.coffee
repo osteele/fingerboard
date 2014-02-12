@@ -45,10 +45,6 @@ module.exports = (grunt) ->
         src: ['**/*', '!**/*.{coffee,jade,ls,scss,png,jpg,gif}']
         filter: 'isFile'
 
-    'gh-pages':
-      options: base: '<%= directories.release %>'
-      src: '**/*'
-
     imagemin:
       app:
         expand: true
@@ -66,6 +62,16 @@ module.exports = (grunt) ->
       options:
         pretty: true
         pretty$release: false
+
+    s3:
+      options:
+        bucket: 'code.osteele.com'
+        access: 'public-read'
+      release:
+        upload: [
+          src: 'release/**/*',
+          dest: 'fingerboard/'
+        ]
 
     sass:
       app:
@@ -100,5 +106,5 @@ module.exports = (grunt) ->
 
   grunt.registerTask 'build', ['clean:target', 'browserify', 'jade', 'sass', 'copy', 'imagemin']
   grunt.registerTask 'build:release', ['contextualize:release', 'build']
-  grunt.registerTask 'deploy', ['build:release', 'gh-pages']
+  grunt.registerTask 'deploy', ['build:release', 's3:release']
   grunt.registerTask 'default', ['update', 'connect', 'autowatch']

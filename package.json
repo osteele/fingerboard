@@ -28,12 +28,12 @@
     "grunt-contrib-jade": "~0.8.0",
     "grunt-contrib-sass": "~0.5.0",
     "grunt-contrib-watch": "~0.5.3",
-    "grunt-gh-pages": "~0.7.4",
     "grunt-notify": "~0.2.13",
     "load-grunt-tasks": "~0.1.0",
     "marked": "~0.2.9",
     "grunt-update": "~0.2.1",
     "grunt-contextualize": "~0.2.1",
-    "grunt-autowatch": "~0.1.0"
+    "grunt-autowatch": "~0.1.0",
+    "grunt-s3": "~0.2.0-alpha.3"
   }
 }
