@@ -34,6 +34,7 @@
     "grunt-update": "~0.2.1",
     "grunt-contextualize": "~0.2.1",
     "grunt-autowatch": "~0.1.0",
-    "grunt-s3": "~0.2.0-alpha.3"
+    "grunt-s3": "~0.2.0-alpha.3",
+    "grunt-cloudflare": "0.0.2"
   }
 }

@@ -106,5 +106,5 @@ module.exports = (grunt) ->
 
   grunt.registerTask 'build', ['clean:target', 'browserify', 'jade', 'sass', 'copy', 'imagemin']
   grunt.registerTask 'build:release', ['contextualize:release', 'build']
-  grunt.registerTask 'deploy', ['build:release', 's3:release']
+  grunt.registerTask 'deploy', ['build:release', 's3:release', 'cloudflare']
   grunt.registerTask 'default', ['update', 'connect', 'autowatch']
